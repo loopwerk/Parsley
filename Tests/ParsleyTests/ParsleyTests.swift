@@ -16,8 +16,9 @@ final class ParsleyTests: XCTestCase {
     let input = """
 # Title
 Body
+Line Two
 """
-    let expectedOutput = "<p>Body</p>"
+    let expectedOutput = "<p>Body\nLine Two</p>"
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.title, "Title")
@@ -125,7 +126,7 @@ Newline!</p>
 </ul>
 """
 
-    let markdown = try Parsley.parse(input)
+    let markdown = try Parsley.parse(input, options: [.safe, .hardBreaks])
     XCTAssertEqual(markdown.title, nil)
     XCTAssertEqual(markdown.body, expectedOutput)
     XCTAssertEqual(markdown.metadata, [:])
@@ -148,6 +149,30 @@ let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.metadata, [:])
   }
 
+  func testSmartQuotesOff() throws {
+    let input = """
+"test"
+"""
+    let expectedOutput = "<p>&quot;test&quot;</p>"
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.title, nil)
+    XCTAssertEqual(markdown.body, expectedOutput)
+    XCTAssertEqual(markdown.metadata, [:])
+  }
+
+  func testSmartQuotesOn() throws {
+    let input = """
+"test"
+"""
+    let expectedOutput = "<p>“test”</p>"
+
+    let markdown = try Parsley.parse(input, options: [.smartQuotes])
+    XCTAssertEqual(markdown.title, nil)
+    XCTAssertEqual(markdown.body, expectedOutput)
+    XCTAssertEqual(markdown.metadata, [:])
+  }
+
   static var allTests = [
     ("testBare", testBare),
     ("testTitle", testTitle),
@@ -158,5 +183,7 @@ let markdown = try Parsley.parse(input)
     ("testTitleAndMetadataNewline", testTitleAndMetadataNewline),
     ("testOtherFeatures", testOtherFeatures),
     ("testFencedCodeBlock", testFencedCodeBlock),
+    ("testSmartQuotesOff", testSmartQuotesOff),
+    ("testSmartQuotesOn", testSmartQuotesOn),
   ]
 }

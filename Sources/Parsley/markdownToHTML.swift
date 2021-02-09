@@ -21,7 +21,7 @@ public struct MarkdownOptions: OptionSet {
   static public let unsafe = MarkdownOptions(rawValue: 1 << 17)
 }
 
-public func markdownToHTML(_ str: String, options: MarkdownOptions = [.safe, .hardBreaks]) throws -> String {
+public func markdownToHTML(_ str: String, options: MarkdownOptions = [.safe]) throws -> String {
   var buffer: String?
   try str.withCString {
     guard let buf = cmark_markdown_to_html($0, Int(strlen($0)), options.rawValue) else {

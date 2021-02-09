@@ -1,7 +1,7 @@
 import Foundation
 
 public struct Parsley {
-  public static func parse(_ content: String, options: MarkdownOptions = [.safe, .hardBreaks]) throws -> Markdown {
+  public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Markdown {
     let (header, title, body) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
