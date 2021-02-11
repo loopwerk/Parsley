@@ -173,6 +173,26 @@ let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.metadata, [:])
   }
 
+  func testSafe() throws {
+    let input = "<div>Test</div>"
+    let expectedOutput = "<!-- raw HTML omitted -->"
+
+    let markdown = try Parsley.parse(input, options: [.safe])
+    XCTAssertEqual(markdown.title, nil)
+    XCTAssertEqual(markdown.body, expectedOutput)
+    XCTAssertEqual(markdown.metadata, [:])
+  }
+
+  func testUnsafe() throws {
+    let input = "<div>Test</div>"
+    let expectedOutput = "<div>Test</div>"
+
+    let markdown = try Parsley.parse(input, options: [.unsafe])
+    XCTAssertEqual(markdown.title, nil)
+    XCTAssertEqual(markdown.body, expectedOutput)
+    XCTAssertEqual(markdown.metadata, [:])
+  }
+
   static var allTests = [
     ("testBare", testBare),
     ("testTitle", testTitle),
@@ -185,5 +205,7 @@ let markdown = try Parsley.parse(input)
     ("testFencedCodeBlock", testFencedCodeBlock),
     ("testSmartQuotesOff", testSmartQuotesOff),
     ("testSmartQuotesOn", testSmartQuotesOn),
+    ("testSafe", testSafe),
+    ("testUnsafe", testUnsafe),
   ]
 }
