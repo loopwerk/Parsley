@@ -2,12 +2,12 @@ import Foundation
 
 public struct Parsley {
   public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Markdown {
-    let (header, title, body) = Parsley.parts(from: content)
+    let (header, title, rawBody) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
-    let bodyHtml = try markdownToHTML(body, options: options).trimmingCharacters(in: .newlines)
+    let bodyHtml = try markdownToHTML(rawBody, options: options).trimmingCharacters(in: .newlines)
 
-    return Markdown(title: title, body: bodyHtml, metadata: metadata)
+    return Markdown(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
   }
 }
 

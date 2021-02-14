@@ -5,6 +5,9 @@ public struct Markdown {
   /// the first one.
   public let title: String?
 
+  /// The raw body, not parsed. Stripped from the initial title.
+  public let rawBody: String
+
   /// The HTML representation of the Markdown, ready to
   /// be rendered in a web browser. Stripped from the initial title.
   public let body: String
@@ -14,8 +17,9 @@ public struct Markdown {
   /// You'll need to use the `meta` extension for this to work.
   public let metadata: [String : String]
 
-  internal init(title: String?, body: String, metadata: [String : String]) {
+  internal init(title: String?, rawBody: String, body: String, metadata: [String : String]) {
     self.title = title
+    self.rawBody = rawBody
     self.body = body
     self.metadata = metadata
   }
