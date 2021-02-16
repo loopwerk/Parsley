@@ -38,7 +38,7 @@ private extension Parsley {
     return Dictionary(pairs) { a, _ in a }
   }
 
-  /// Grabs the metadata (wrapped within `---`, the first title, and the body of the document.
+  /// Grabs the metadata (wrapped within `---`), the first title, and the body of the document.
   static func parts(from content: String) -> (String?, String?, String) {
     let scanner = Scanner(string: content)
 
