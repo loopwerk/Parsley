@@ -1,4 +1,4 @@
-public struct Markdown {
+public struct Document {
   /// The inferred title of the document, from any top-level
   /// heading found when parsing. If the Markdown text contained
   /// two top-level headings, then this property will contain

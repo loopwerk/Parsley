@@ -15,8 +15,8 @@ tags: Swift, Parsley
 This is the body
 """
 
-let markdown = try Parsley.parse(input)
-print(markdown.title) // Hello World
-print(markdown.body) // <p>This is the body</p>
-print(markdown.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
+let document = try Parsley.parse(input)
+print(document.title) // Hello World
+print(document.body) // <p>This is the body</p>
+print(document.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
 ```

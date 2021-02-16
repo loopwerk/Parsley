@@ -23,14 +23,14 @@ public struct Parsley {
     return output
   }
 
-  /// This parses a String into a Markdown instance, which contains parsed Metadata and the document title.
-  public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Markdown {
+  /// This parses a String into a Document, which contains parsed Metadata and the document title.
+  public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Document {
     let (header, title, rawBody) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
     let bodyHtml = try Parsley.html(rawBody, options: options).trimmingCharacters(in: .newlines)
 
-    return Markdown(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
+    return Document(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
   }
 }
 
