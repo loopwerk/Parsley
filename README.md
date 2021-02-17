@@ -20,3 +20,9 @@ print(document.title) // Hello World
 print(document.body) // <p>This is the body</p>
 print(document.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
 ```
+
+
+## Modifying the generated HTML
+Parsley doesn't come with a plugin system, it relies purely on `cmark-gfm` under the hood to render Markdown to HTML. If you want to modify the generated HTML, for example if you want to add `target="blank"` to all external links, [SwiftSoup](https://github.com/scinfu/SwiftSoup) is a great way to achieve this.
+
+Adding a plugin system on top of `cmark` would mean that Parsley could no longer rely on the outstanding output of `cmark`; instead Parsley would have to parse its AST and generate HTML based on that itself, thus reinventing the (very complex) wheel.
