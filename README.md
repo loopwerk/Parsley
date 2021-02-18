@@ -21,6 +21,14 @@ print(document.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
 ```
 
 
+## Install
+Parsley is available via Swift Package Manager and runs on macOS and Linux.
+
+```
+.package(url: "https://github.com/loopwerk/Parsley", from: "0.5.0"),
+```
+
+
 ## Use as a reader in Saga
 Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
