@@ -1,5 +1,4 @@
 # Parsley
-
 A Markdown parser for Swift Package Manager, using [Github Flavored Markdown](https://github.github.com/gfm/). As such it comes with a bunch of Markdown extensions such as fenced code blocks, tables, strikethrough, hard line breaks and auto links.
 
 Additionally Parsley supports embedded metadata in Markdown documents, and it splits the document title out from the document body.
@@ -20,6 +19,10 @@ print(document.title) // Hello World
 print(document.body) // <p>This is the body</p>
 print(document.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
 ```
+
+
+## Use as a reader in Saga
+Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
 
 ## Modifying the generated HTML
