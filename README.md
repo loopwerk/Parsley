@@ -1,9 +1,6 @@
 <p align="center">
-  <img src="logo.png" width="300" alt="tag-changelog" />
+  <img src="logo.png" width="400" alt="tag-changelog" />
 </p>
-
-# Parsley
-![Build result](https://github.com/loopwerk/Parsley/actions/workflows/test.yml/badge.svg)
 
 A Markdown parser for Swift Package Manager, using [Github Flavored Markdown](https://github.github.com/gfm/). As such it comes with a bunch of Markdown extensions such as fenced code blocks, tables, strikethrough, hard line breaks and auto links.
 
