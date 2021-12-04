@@ -10,7 +10,7 @@ public struct Parsley {
   public static func html(_ content: String, options: MarkdownOptions = [.safe]) throws -> String {
     var buffer: String?
     try content.withCString {
-      guard let buf = cmark_markdown_to_html($0, Int(strlen($0)), options.rawValue) else {
+      guard let buf = cmark_gfm_markdown_to_html($0, Int(strlen($0)), options.rawValue) else {
         throw MarkdownError.conversionFailed
       }
       buffer = String(cString: buf)

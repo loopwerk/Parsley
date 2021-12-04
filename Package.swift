@@ -13,7 +13,7 @@ let package = Package(
       targets: ["Parsley"]),
   ],
   dependencies: [
-    .package(name:"cmark", url: "https://github.com/brokenhandsio/cmark-gfm.git", from: "2.0.0"),
+    .package(name:"cmark", url: "https://github.com/brokenhandsio/cmark-gfm.git", from: "2.1.0"),
   ],
   targets: [
     .target(
