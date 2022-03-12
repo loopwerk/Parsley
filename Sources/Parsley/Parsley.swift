@@ -8,19 +8,30 @@ public enum MarkdownError: Error {
 public struct Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
   public static func html(_ content: String, options: MarkdownOptions = [.safe]) throws -> String {
-    var buffer: String?
-    try content.withCString {
-      guard let buf = cmark_gfm_markdown_to_html($0, Int(strlen($0)), options.rawValue) else {
-        throw MarkdownError.conversionFailed
-      }
-      buffer = String(cString: buf)
-      free(buf)
+    var tree: UnsafeMutablePointer<cmark_node>?
+
+    content.withCString {
+      let stringLength = Int(strlen($0))
+      tree = cmark_parse_document($0, stringLength, options.rawValue)
     }
-    guard let output = buffer else {
+
+    guard let ast = tree else {
       throw MarkdownError.conversionFailed
     }
 
-    return output
+    guard let cHTMLString = cmark_render_html(&ast.pointee, options.rawValue, nil) else {
+      throw MarkdownError.conversionFailed
+    }
+
+    defer {
+      free(cHTMLString)
+    }
+
+    guard let htmlString = String(cString: cHTMLString, encoding: String.Encoding.utf8) else {
+      throw MarkdownError.conversionFailed
+    }
+
+    return htmlString
   }
 
   /// This parses a String into a Document, which contains parsed Metadata and the document title.

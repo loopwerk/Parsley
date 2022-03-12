@@ -13,10 +13,19 @@ let package = Package(
       name: "Parsley",
       targets: ["Parsley"]),
   ],
-  dependencies: [
-    .package(name:"cmark", url: "https://github.com/brokenhandsio/cmark-gfm.git", from: "2.1.0"),
-  ],
+  dependencies: [],
   targets: [
+    .target(
+      name: "cmark",
+      dependencies: [],
+      path: "Sources/cmark",
+      exclude: [
+          "include",
+          "case_fold_switch.inc",
+          "entities.inc",
+          "COPYING"
+      ],
+      publicHeadersPath: "."),
     .target(
       name: "Parsley",
       dependencies: [
