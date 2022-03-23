@@ -32,8 +32,6 @@ let package = Package(
       ]),
     .testTarget(
       name: "ParsleyTests",
-      dependencies: ["Parsley"]),
-
-    .target(name: "Example", dependencies: ["Parsley"])
+      dependencies: ["Parsley"])
   ]
 )
