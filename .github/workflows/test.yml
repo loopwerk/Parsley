@@ -13,9 +13,11 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-software for versions
         xcode:
           - 11.7
-          - 12.3
+          - 12.5.1
+          - 13.2.1
 
     steps:
       - uses: actions/checkout@v2
