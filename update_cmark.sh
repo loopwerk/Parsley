@@ -8,13 +8,7 @@
 
 # Clear cmark directory
 rm -rf Sources/cmark
-mkdir -p Sources/cmark/include
-
-# Create module map
-echo "module libcmark [system][extern_c] {
-    header \"../node.h\"
-    export *
-}" > Sources/cmark/include/module.modulemap
+mkdir -p Sources/cmark
 
 # Clone cmark-gfm and checkout a commit if specified
 git clone https://github.com/github/cmark-gfm.git
@@ -28,8 +22,9 @@ fi
 cp cmark-gfm/COPYING Sources/cmark
 
 # Copy source files
-cp cmark-gfm/src/*.c cmark-gfm/src/*.h cmark-gfm/src/*.re cmark-gfm/src/*.inc Sources/cmark
-cp cmark-gfm/extensions/*.c cmark-gfm/extensions/*.h Sources/cmark
+mkdir -p Sources/cmark
+cp cmark-gfm/src/*.{inc,c,h,re,in} Sources/cmark
+cp cmark-gfm/extensions/*.{c,h,re,txt} Sources/cmark
 
 # Delete `main.c` because it causes issues
 rm Sources/cmark/main.c
@@ -42,7 +37,7 @@ cd ../..
 
 # Copy generated files
 cp cmark-gfm/build/src/*.h Sources/cmark
-cp cmark-gfm/build/extensions/cmark-gfm-extensions_export.h Sources/cmark
+cp cmark-gfm/build/extensions/*.h Sources/cmark
 
 # Clean up
-# rm -rf cmark-gfm
+rm -rf cmark-gfm

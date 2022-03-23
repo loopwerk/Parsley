@@ -25,7 +25,7 @@ let package = Package(
           "entities.inc",
           "COPYING"
       ],
-      publicHeadersPath: "src"),
+      publicHeadersPath: "."),
     .target(
       name: "Parsley",
       dependencies: [
