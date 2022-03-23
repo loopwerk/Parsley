@@ -29,6 +29,7 @@ cp cmark-gfm/COPYING Sources/cmark
 
 # Copy source files
 cp cmark-gfm/src/*.c cmark-gfm/src/*.h cmark-gfm/src/*.re cmark-gfm/src/*.inc Sources/cmark
+cp cmark-gfm/extensions/*.c cmark-gfm/extensions/*.h Sources/cmark
 
 # Delete `main.c` because it causes issues
 rm Sources/cmark/main.c
@@ -41,6 +42,7 @@ cd ../..
 
 # Copy generated files
 cp cmark-gfm/build/src/*.h Sources/cmark
+cp cmark-gfm/build/extensions/cmark-gfm-extensions_export.h Sources/cmark
 
 # Clean up
-rm -rf cmark-gfm
+# rm -rf cmark-gfm

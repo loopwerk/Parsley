@@ -8,30 +8,48 @@ public enum MarkdownError: Error {
 public struct Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
   public static func html(_ content: String, options: MarkdownOptions = [.safe]) throws -> String {
-    var tree: UnsafeMutablePointer<cmark_node>?
-
+    // Create parser
+    guard let parser = cmark_parser_new(options.rawValue) else {
+      throw MarkdownError.conversionFailed
+    }
+    
+    // Register extensions
+    cmark_parser_attach_syntax_extension(parser, create_autolink_extension())
+    cmark_parser_attach_syntax_extension(parser, create_strikethrough_extension())
+    cmark_parser_attach_syntax_extension(parser, create_table_extension())
+    cmark_parser_attach_syntax_extension(parser, create_tagfilter_extension())
+    cmark_parser_attach_syntax_extension(parser, create_tasklist_extension())
+    
+    // Parse into an ast
     content.withCString {
       let stringLength = Int(strlen($0))
-      tree = cmark_parse_document($0, stringLength, options.rawValue)
+      cmark_parser_feed(parser, $0, stringLength)
     }
-
-    guard let ast = tree else {
+    
+    guard let ast = cmark_parser_finish(parser) else {
       throw MarkdownError.conversionFailed
     }
-
-    guard let cHTMLString = cmark_render_html(&ast.pointee, options.rawValue, nil) else {
+    
+    // Render the ast into an html string
+    guard let htmlCString = cmark_render_html(&ast.pointee, options.rawValue, parser.pointee.syntax_extensions) else {
       throw MarkdownError.conversionFailed
     }
+    
+    // Free memory
+    cmark_parser_free(parser)
+    cmark_node_free(ast)
+    cmark_release_plugins()
 
     defer {
-      free(cHTMLString)
+      free(htmlCString)
     }
-
-    guard let htmlString = String(cString: cHTMLString, encoding: String.Encoding.utf8) else {
+    
+    // Convert resulting c string to a Swift string
+    guard let html = String(cString: htmlCString, encoding: String.Encoding.utf8) else {
       throw MarkdownError.conversionFailed
     }
 
-    return htmlString
+    return html
   }
 
   /// This parses a String into a Document, which contains parsed Metadata and the document title.
