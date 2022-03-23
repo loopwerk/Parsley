@@ -23,8 +23,8 @@ cp cmark-gfm/COPYING Sources/cmark
 
 # Copy source files
 mkdir -p Sources/cmark
-cp cmark-gfm/src/*.{inc,c,h,re,in} Sources/cmark
-cp cmark-gfm/extensions/*.{c,h,re,txt} Sources/cmark
+cp cmark-gfm/src/*.{inc,c,h} Sources/cmark
+cp cmark-gfm/extensions/*.{c,h} Sources/cmark
 
 # Delete `main.c` because it causes issues
 rm Sources/cmark/main.c

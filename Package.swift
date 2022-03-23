@@ -20,7 +20,6 @@ let package = Package(
       dependencies: [],
       path: "Sources/cmark",
       exclude: [
-          "include",
           "case_fold_switch.inc",
           "entities.inc",
           "COPYING"
