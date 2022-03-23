@@ -2,12 +2,12 @@
   "object": {
     "pins": [
       {
-        "package": "cmark",
-        "repositoryURL": "https://github.com/brokenhandsio/cmark-gfm.git",
+        "package": "swift-cmark-gfm",
+        "repositoryURL": "https://github.com/stackotter/swift-cmark-gfm",
         "state": {
           "branch": null,
-          "revision": "e97450a77a40f12b4f88f95891621c3b5d8669de",
-          "version": "2.1.0"
+          "revision": "b9dbc8163ad979b16e680242f1c5143c31143a3f",
+          "version": "1.0.0"
         }
       }
     ]

@@ -6,7 +6,7 @@ let package = Package(
   name: "Parsley",
   platforms: [
     .macOS(.v10_15),
-    .iOS(.v13)
+    .iOS(.v13),
   ],
   products: [
     .library(
@@ -14,16 +14,16 @@ let package = Package(
       targets: ["Parsley"]),
   ],
   dependencies: [
-    .package(name:"cmark", url: "https://github.com/brokenhandsio/cmark-gfm.git", from: "2.1.0"),
+    .package(url: "https://github.com/stackotter/swift-cmark-gfm", from: "1.0.0")
   ],
   targets: [
     .target(
       name: "Parsley",
       dependencies: [
-        "cmark"
+        .product(name: "CMarkGFM", package: "swift-cmark-gfm")
       ]),
     .testTarget(
       name: "ParsleyTests",
-      dependencies: ["Parsley"]),
+      dependencies: ["Parsley"])
   ]
 )
