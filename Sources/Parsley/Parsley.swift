@@ -1,5 +1,5 @@
 import Foundation
-import cmark
+import CMarkGFM
 
 public enum MarkdownError: Error {
   case conversionFailed
