@@ -6,8 +6,8 @@
         "repositoryURL": "https://github.com/stackotter/swift-cmark-gfm",
         "state": {
           "branch": null,
-          "revision": "b9dbc8163ad979b16e680242f1c5143c31143a3f",
-          "version": "1.0.0"
+          "revision": "7ec44e7384793e507cf046336aef68586719a24e",
+          "version": "1.0.2"
         }
       }
     ]

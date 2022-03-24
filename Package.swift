@@ -14,7 +14,7 @@ let package = Package(
       targets: ["Parsley"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/stackotter/swift-cmark-gfm", from: "1.0.0")
+    .package(url: "https://github.com/stackotter/swift-cmark-gfm", from: "1.0.2")
   ],
   targets: [
     .target(
