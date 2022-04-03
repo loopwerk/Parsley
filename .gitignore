@@ -2,5 +2,5 @@
 /.build
 /Packages
 /*.xcodeproj
-xcuserdata/
-/.vscode
+.swiftpm
+Package.resolved
