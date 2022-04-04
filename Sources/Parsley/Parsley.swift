@@ -10,24 +10,17 @@ public struct Parsley {
   public static func html(
     _ content: String,
     options: MarkdownOptions = [.safe],
-    additionalSyntaxExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []
+    syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
   ) throws -> String {
     // Create parser
     guard let parser = cmark_parser_new(options.rawValue) else {
       throw MarkdownError.conversionFailed
     }
 
-    // Register user-defined extensions
-    for syntaxExtension in additionalSyntaxExtensions {
-      cmark_parser_attach_syntax_extension(parser, syntaxExtension)
+    // Register syntax extensions
+    for syntaxExtension in syntaxExtensions {
+      cmark_parser_attach_syntax_extension(parser, syntaxExtension.createPointer())
     }
-    
-    // Register default extensions
-    cmark_parser_attach_syntax_extension(parser, create_autolink_extension())
-    cmark_parser_attach_syntax_extension(parser, create_strikethrough_extension())
-    cmark_parser_attach_syntax_extension(parser, create_table_extension())
-    cmark_parser_attach_syntax_extension(parser, create_tagfilter_extension())
-    cmark_parser_attach_syntax_extension(parser, create_tasklist_extension())
     
     // Parse into an ast
     content.withCString {
@@ -65,7 +58,7 @@ public struct Parsley {
   public static func parse(
     _ content: String,
     options: MarkdownOptions = [.safe],
-    additionalSyntaxExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []
+    syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
   ) throws -> Document {
     let (header, title, rawBody) = Parsley.parts(from: content)
 
@@ -73,7 +66,7 @@ public struct Parsley {
     let bodyHtml = try Parsley.html(
       rawBody,
       options: options,
-      additionalSyntaxExtensions: additionalSyntaxExtensions
+      syntaxExtensions: syntaxExtensions
     ).trimmingCharacters(in: .newlines)
 
     return Document(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
