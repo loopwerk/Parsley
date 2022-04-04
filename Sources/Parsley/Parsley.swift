@@ -7,15 +7,19 @@ public enum MarkdownError: Error {
 
 public struct Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
-  public static func html(_ content: String, options: MarkdownOptions = [.safe], additionalExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []) throws -> String {
+  public static func html(
+    _ content: String,
+    options: MarkdownOptions = [.safe],
+    additionalSyntaxExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []
+  ) throws -> String {
     // Create parser
     guard let parser = cmark_parser_new(options.rawValue) else {
       throw MarkdownError.conversionFailed
     }
 
     // Register user-defined extensions
-    for additionalExtension in additionalExtensions {
-      cmark_parser_attach_syntax_extension(parser, additionalExtension)
+    for syntaxExtension in additionalSyntaxExtensions {
+      cmark_parser_attach_syntax_extension(parser, syntaxExtension)
     }
     
     // Register default extensions
@@ -58,11 +62,19 @@ public struct Parsley {
   }
 
   /// This parses a String into a Document, which contains parsed Metadata and the document title.
-  public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Document {
+  public static func parse(
+    _ content: String,
+    options: MarkdownOptions = [.safe],
+    additionalSyntaxExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []
+  ) throws -> Document {
     let (header, title, rawBody) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
-    let bodyHtml = try Parsley.html(rawBody, options: options).trimmingCharacters(in: .newlines)
+    let bodyHtml = try Parsley.html(
+      rawBody,
+      options: options,
+      additionalSyntaxExtensions: additionalSyntaxExtensions
+    ).trimmingCharacters(in: .newlines)
 
     return Document(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
   }
