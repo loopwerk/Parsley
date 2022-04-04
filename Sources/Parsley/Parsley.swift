@@ -7,13 +7,18 @@ public enum MarkdownError: Error {
 
 public struct Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
-  public static func html(_ content: String, options: MarkdownOptions = [.safe]) throws -> String {
+  public static func html(_ content: String, options: MarkdownOptions = [.safe], additionalExtensions: [UnsafeMutablePointer<cmark_syntax_extension>] = []) throws -> String {
     // Create parser
     guard let parser = cmark_parser_new(options.rawValue) else {
       throw MarkdownError.conversionFailed
     }
+
+    // Register user-defined extensions
+    for additionalExtension in additionalExtensions {
+      cmark_parser_attach_syntax_extension(parser, additionalExtension)
+    }
     
-    // Register extensions
+    // Register default extensions
     cmark_parser_attach_syntax_extension(parser, create_autolink_extension())
     cmark_parser_attach_syntax_extension(parser, create_strikethrough_extension())
     cmark_parser_attach_syntax_extension(parser, create_table_extension())
