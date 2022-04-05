@@ -7,18 +7,20 @@ public enum MarkdownError: Error {
 
 public struct Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
-  public static func html(_ content: String, options: MarkdownOptions = [.safe]) throws -> String {
+  public static func html(
+    _ content: String,
+    options: MarkdownOptions = [.safe],
+    syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
+  ) throws -> String {
     // Create parser
     guard let parser = cmark_parser_new(options.rawValue) else {
       throw MarkdownError.conversionFailed
     }
-    
-    // Register extensions
-    cmark_parser_attach_syntax_extension(parser, create_autolink_extension())
-    cmark_parser_attach_syntax_extension(parser, create_strikethrough_extension())
-    cmark_parser_attach_syntax_extension(parser, create_table_extension())
-    cmark_parser_attach_syntax_extension(parser, create_tagfilter_extension())
-    cmark_parser_attach_syntax_extension(parser, create_tasklist_extension())
+
+    // Register syntax extensions
+    for syntaxExtension in syntaxExtensions {
+      cmark_parser_attach_syntax_extension(parser, syntaxExtension.createPointer())
+    }
     
     // Parse into an ast
     content.withCString {
@@ -53,11 +55,19 @@ public struct Parsley {
   }
 
   /// This parses a String into a Document, which contains parsed Metadata and the document title.
-  public static func parse(_ content: String, options: MarkdownOptions = [.safe]) throws -> Document {
+  public static func parse(
+    _ content: String,
+    options: MarkdownOptions = [.safe],
+    syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
+  ) throws -> Document {
     let (header, title, rawBody) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
-    let bodyHtml = try Parsley.html(rawBody, options: options).trimmingCharacters(in: .newlines)
+    let bodyHtml = try Parsley.html(
+      rawBody,
+      options: options,
+      syntaxExtensions: syntaxExtensions
+    ).trimmingCharacters(in: .newlines)
 
     return Document(title: title, rawBody: rawBody, body: bodyHtml, metadata: metadata)
   }
