@@ -15,7 +15,6 @@ jobs:
       matrix:
         # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-software for versions
         xcode:
-          - 14.3.1
           - 15.2
 
     steps:
