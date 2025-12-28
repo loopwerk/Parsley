@@ -36,6 +36,38 @@ Parsley is available via Swift Package Manager and runs on macOS and Linux.
 Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
 
+## Code block titles
+Parsley supports adding a title (typically a filename) to fenced code blocks using the `title="..."` syntax:
+
+~~~markdown
+```python title="views.py"
+def hello():
+    print("Hello, World!")
+```
+~~~
+
+This generates HTML with a `data-title` attribute on the `<pre>` element:
+
+```html
+<pre data-title="views.py"><code class="language-python">def hello():
+    print("Hello, World!")
+</code></pre>
+```
+
+You can then use CSS to display the title, for example:
+
+```css
+pre[data-title]::before {
+  content: attr(data-title);
+  display: block;
+  background: #1a1a1a;
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  border-bottom: 1px solid #333;
+}
+```
+
+
 ## Modifying the generated HTML
 Parsley doesn't come with a plugin system, it relies purely on `cmark-gfm` under the hood to render Markdown to HTML. If you want to modify the generated HTML, for example if you want to add `target="blank"` to all external links, [SwiftSoup](https://github.com/scinfu/SwiftSoup) is a great way to achieve this.
 

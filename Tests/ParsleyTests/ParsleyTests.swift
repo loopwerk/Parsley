@@ -149,6 +149,55 @@ let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.metadata, [:])
   }
 
+  func testFencedCodeBlockWithTitle() throws {
+    let input = """
+```python title="views.py"
+def test():
+    pass
+```
+"""
+    let expectedOutput = """
+<pre data-title="views.py"><code class="language-python">def test():
+    pass
+</code></pre>
+"""
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
+  func testFencedCodeBlockWithTitleAndPath() throws {
+    let input = """
+```ts title="lib/store.js"
+function test() {}
+```
+"""
+    let expectedOutput = """
+<pre data-title="lib/store.js"><code class="language-ts">function test() {}
+</code></pre>
+"""
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
+  func testFencedCodeBlockWithoutTitle() throws {
+    let input = """
+```python
+def test():
+    pass
+```
+"""
+    let expectedOutput = """
+<pre><code class="language-python">def test():
+    pass
+</code></pre>
+"""
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
   func testSmartQuotesOff() throws {
     let input = """
 "test"
@@ -203,6 +252,9 @@ let markdown = try Parsley.parse(input)
     ("testTitleAndMetadataNewline", testTitleAndMetadataNewline),
     ("testOtherFeatures", testOtherFeatures),
     ("testFencedCodeBlock", testFencedCodeBlock),
+    ("testFencedCodeBlockWithTitle", testFencedCodeBlockWithTitle),
+    ("testFencedCodeBlockWithTitleAndPath", testFencedCodeBlockWithTitleAndPath),
+    ("testFencedCodeBlockWithoutTitle", testFencedCodeBlockWithoutTitle),
     ("testSmartQuotesOff", testSmartQuotesOff),
     ("testSmartQuotesOn", testSmartQuotesOn),
     ("testSafe", testSafe),

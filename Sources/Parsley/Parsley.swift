@@ -22,16 +22,19 @@ public struct Parsley {
       cmark_parser_attach_syntax_extension(parser, syntaxExtension.createPointer())
     }
     
+    // Pre-process markdown to extract title from code fence info
+    let processedContent = preprocessCodeBlockTitles(content)
+
     // Parse into an ast
-    content.withCString {
+    processedContent.withCString {
       let stringLength = Int(strlen($0))
       cmark_parser_feed(parser, $0, stringLength)
     }
-    
+
     guard let ast = cmark_parser_finish(parser) else {
       throw MarkdownError.conversionFailed
     }
-    
+
     // Render the ast into an html string
     guard let htmlCString = cmark_render_html(&ast.pointee, options.rawValue, parser.pointee.syntax_extensions) else {
       throw MarkdownError.conversionFailed
@@ -51,7 +54,8 @@ public struct Parsley {
       throw MarkdownError.conversionFailed
     }
 
-    return html
+    // Post-process HTML to convert code-title comments to data-title attributes
+    return processCodeTitleComments(html)
   }
 
   /// This parses a String into a Document, which contains parsed Metadata and the document title.
@@ -74,6 +78,32 @@ public struct Parsley {
 }
 
 private extension Parsley {
+  /// Pre-processes markdown to extract title from code fence info.
+  /// Transforms: ```python title="views.py"  →  ```python
+  ///                                             <!--code-title:views.py-->
+  static func preprocessCodeBlockTitles(_ markdown: String) -> String {
+    let pattern = #"```(\S+)\s+title="([^"]+)"\n"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return markdown }
+    return regex.stringByReplacingMatches(
+      in: markdown,
+      range: NSRange(markdown.startIndex..., in: markdown),
+      withTemplate: "```$1\n<!--code-title:$2-->\n"
+    )
+  }
+
+  /// Converts code-title comment markers in HTML to data-title attributes on pre tags.
+  /// Transforms: <pre><code class="language-xxx">&lt;!--code-title:filename--&gt;\n
+  /// Into: <pre data-title="filename"><code class="language-xxx">
+  static func processCodeTitleComments(_ html: String) -> String {
+    let pattern = #"<pre><code([^>]*)>&lt;!--code-title:([^-]+)--&gt;\n"#
+    guard let regex = try? NSRegularExpression(pattern: pattern) else { return html }
+    return regex.stringByReplacingMatches(
+      in: html,
+      range: NSRange(html.startIndex..., in: html),
+      withTemplate: #"<pre data-title="$2"><code$1>"#
+    )
+  }
+
   /// Turns a string like `author: Kevin\ntags: Swift` into a dictionary:
   /// ["author": "Kevin", "tags": "Swift"]
   static func metadata(from content: String?) -> [String: String] {
