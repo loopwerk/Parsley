@@ -95,7 +95,7 @@ private extension Parsley {
   /// Transforms: <pre><code class="language-xxx">&lt;!--code-title:filename--&gt;\n
   /// Into: <pre data-title="filename"><code class="language-xxx">
   static func processCodeTitleComments(_ html: String) -> String {
-    let pattern = #"<pre><code([^>]*)>&lt;!--code-title:([^-]+)--&gt;\n"#
+    let pattern = #"<pre><code([^>]*)>&lt;!--code-title:(.+?)--&gt;\n"#
     guard let regex = try? NSRegularExpression(pattern: pattern) else { return html }
     return regex.stringByReplacingMatches(
       in: html,

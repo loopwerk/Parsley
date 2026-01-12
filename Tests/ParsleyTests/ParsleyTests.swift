@@ -181,6 +181,25 @@ function test() {}
     XCTAssertEqual(markdown.body, expectedOutput)
   }
 
+  func testFencedCodeBlockWithTitleContainingDashes() throws {
+    let input = """
+```nginx title="/etc/nginx/sites-enabled/deploy.example.com"
+server {
+    listen 80;
+}
+```
+"""
+    let expectedOutput = """
+<pre data-title="/etc/nginx/sites-enabled/deploy.example.com"><code class="language-nginx">server {
+    listen 80;
+}
+</code></pre>
+"""
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
   func testFencedCodeBlockWithoutTitle() throws {
     let input = """
 ```python
@@ -254,6 +273,7 @@ def test():
     ("testFencedCodeBlock", testFencedCodeBlock),
     ("testFencedCodeBlockWithTitle", testFencedCodeBlockWithTitle),
     ("testFencedCodeBlockWithTitleAndPath", testFencedCodeBlockWithTitleAndPath),
+    ("testFencedCodeBlockWithTitleContainingDashes", testFencedCodeBlockWithTitleContainingDashes),
     ("testFencedCodeBlockWithoutTitle", testFencedCodeBlockWithoutTitle),
     ("testSmartQuotesOff", testSmartQuotesOff),
     ("testSmartQuotesOn", testSmartQuotesOn),
