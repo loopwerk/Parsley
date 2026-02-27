@@ -71,4 +71,12 @@ pre[data-title]::before {
 Parsley doesn't come with a plugin system, it relies purely on `cmark-gfm` under the hood to render Markdown to HTML. If you want to modify the generated HTML, for example if you want to add `target="blank"` to all external links, [SwiftSoup](https://github.com/scinfu/SwiftSoup) is a great way to achieve this.
 
 ## Code block syntax highlighting
-If you want to add syntax highlighting to the code blocks, you could use a client-side JavaScript library such as [Prism](https://prismjs.com) or [highlight.js](https://highlightjs.org). Or for a server-side solution, check out [Moon](https://github.com/loopwerk/Moon), which runs Prism in Swift.
+If you want to add syntax highlighting to the code blocks, you could use a client-side JavaScript library such as [Prism](https://prismjs.com) or [highlight.js](https://highlightjs.org). Or for a server-side solution, check out [Moon](https://github.com/loopwerk/Moon), which runs Prism in Swift:
+
+```swift
+import Parsley
+import Moon
+
+let html = try Parsley.html(markdown)
+let highlighted = Moon.shared.highlightCodeBlocks(in: html)
+```
