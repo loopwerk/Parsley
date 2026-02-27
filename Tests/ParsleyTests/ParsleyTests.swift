@@ -1,5 +1,5 @@
-import XCTest
 @testable import Parsley
+import XCTest
 
 final class ParsleyTests: XCTestCase {
   func testBare() throws {
@@ -14,10 +14,10 @@ final class ParsleyTests: XCTestCase {
 
   func testTitle() throws {
     let input = """
-# Title
-Body
-Line Two
-"""
+    # Title
+    Body
+    Line Two
+    """
     let expectedOutput = "<p>Body\nLine Two</p>"
 
     let markdown = try Parsley.parse(input)
@@ -28,15 +28,15 @@ Line Two
 
   func testNoneTitle() throws {
     let input = """
-First line
-# Title
-Body
-"""
+    First line
+    # Title
+    Body
+    """
     let expectedOutput = """
-<p>First line</p>
-<h1>Title</h1>
-<p>Body</p>
-"""
+    <p>First line</p>
+    <h1>Title</h1>
+    <p>Body</p>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.title, nil)
@@ -47,10 +47,10 @@ Body
   func testTitleNewlines() throws {
     let input = """
 
-# Title
+    # Title
 
-Body
-"""
+    Body
+    """
     let expectedOutput = "<p>Body</p>"
 
     let markdown = try Parsley.parse(input)
@@ -61,12 +61,12 @@ Body
 
   func testMetadata() throws {
     let input = """
----
-author: Kevin
-tag: Swift
----
-Body
-"""
+    ---
+    author: Kevin
+    tag: Swift
+    ---
+    Body
+    """
     let expectedOutput = "<p>Body</p>"
 
     let markdown = try Parsley.parse(input)
@@ -77,13 +77,13 @@ Body
 
   func testTitleAndMetadata() throws {
     let input = """
----
-author: Kevin
-tag: Swift
----
-# Title
-Body
-"""
+    ---
+    author: Kevin
+    tag: Swift
+    ---
+    # Title
+    Body
+    """
     let expectedOutput = "<p>Body</p>"
 
     let markdown = try Parsley.parse(input)
@@ -94,14 +94,14 @@ Body
 
   func testTitleAndMetadataNewline() throws {
     let input = """
----
-author: Kevin
-tag: Swift
----
+    ---
+    author: Kevin
+    tag: Swift
+    ---
 
-# Title
-Body
-"""
+    # Title
+    Body
+    """
     let expectedOutput = "<p>Body</p>"
 
     let markdown = try Parsley.parse(input)
@@ -112,19 +112,19 @@ Body
 
   func testOtherFeatures() throws {
     let input = """
-Test ~~strike~~ www.example.com kevin@example.com
-Newline!
-- list
-- item
-"""
+    Test ~~strike~~ www.example.com kevin@example.com
+    Newline!
+    - list
+    - item
+    """
     let expectedOutput = """
-<p>Test <del>strike</del> <a href="http://www.example.com">www.example.com</a> <a href="mailto:kevin@example.com">kevin@example.com</a><br />
-Newline!</p>
-<ul>
-<li>list</li>
-<li>item</li>
-</ul>
-"""
+    <p>Test <del>strike</del> <a href="http://www.example.com">www.example.com</a> <a href="mailto:kevin@example.com">kevin@example.com</a><br />
+    Newline!</p>
+    <ul>
+    <li>list</li>
+    <li>item</li>
+    </ul>
+    """
 
     let markdown = try Parsley.parse(input, options: [.safe, .hardBreaks])
     XCTAssertEqual(markdown.title, nil)
@@ -134,14 +134,14 @@ Newline!</p>
 
   func testFencedCodeBlock() throws {
     let input = """
-``` swift
-let markdown = try Parsley.parse(input)
-```
-"""
+    ``` swift
+    let markdown = try Parsley.parse(input)
+    ```
+    """
     let expectedOutput = """
-<pre><code class="language-swift">let markdown = try Parsley.parse(input)
-</code></pre>
-"""
+    <pre><code class="language-swift">let markdown = try Parsley.parse(input)
+    </code></pre>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.title, nil)
@@ -151,16 +151,16 @@ let markdown = try Parsley.parse(input)
 
   func testFencedCodeBlockWithTitle() throws {
     let input = """
-```python title="views.py"
-def test():
-    pass
-```
-"""
+    ```python title="views.py"
+    def test():
+        pass
+    ```
+    """
     let expectedOutput = """
-<pre data-title="views.py"><code class="language-python">def test():
-    pass
-</code></pre>
-"""
+    <pre data-title="views.py"><code class="language-python">def test():
+        pass
+    </code></pre>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.body, expectedOutput)
@@ -168,14 +168,14 @@ def test():
 
   func testFencedCodeBlockWithTitleAndPath() throws {
     let input = """
-```ts title="lib/store.js"
-function test() {}
-```
-"""
+    ```ts title="lib/store.js"
+    function test() {}
+    ```
+    """
     let expectedOutput = """
-<pre data-title="lib/store.js"><code class="language-ts">function test() {}
-</code></pre>
-"""
+    <pre data-title="lib/store.js"><code class="language-ts">function test() {}
+    </code></pre>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.body, expectedOutput)
@@ -183,18 +183,18 @@ function test() {}
 
   func testFencedCodeBlockWithTitleContainingDashes() throws {
     let input = """
-```nginx title="/etc/nginx/sites-enabled/deploy.example.com"
-server {
-    listen 80;
-}
-```
-"""
+    ```nginx title="/etc/nginx/sites-enabled/deploy.example.com"
+    server {
+        listen 80;
+    }
+    ```
+    """
     let expectedOutput = """
-<pre data-title="/etc/nginx/sites-enabled/deploy.example.com"><code class="language-nginx">server {
-    listen 80;
-}
-</code></pre>
-"""
+    <pre data-title="/etc/nginx/sites-enabled/deploy.example.com"><code class="language-nginx">server {
+        listen 80;
+    }
+    </code></pre>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.body, expectedOutput)
@@ -202,16 +202,16 @@ server {
 
   func testFencedCodeBlockWithoutTitle() throws {
     let input = """
-```python
-def test():
-    pass
-```
-"""
+    ```python
+    def test():
+        pass
+    ```
+    """
     let expectedOutput = """
-<pre><code class="language-python">def test():
-    pass
-</code></pre>
-"""
+    <pre><code class="language-python">def test():
+        pass
+    </code></pre>
+    """
 
     let markdown = try Parsley.parse(input)
     XCTAssertEqual(markdown.body, expectedOutput)
@@ -219,8 +219,8 @@ def test():
 
   func testSmartQuotesOff() throws {
     let input = """
-"test"
-"""
+    "test"
+    """
     let expectedOutput = "<p>&quot;test&quot;</p>"
 
     let markdown = try Parsley.parse(input)
@@ -231,8 +231,8 @@ def test():
 
   func testSmartQuotesOn() throws {
     let input = """
-"test"
-"""
+    "test"
+    """
     let expectedOutput = "<p>“test”</p>"
 
     let markdown = try Parsley.parse(input, options: [.smartQuotes])

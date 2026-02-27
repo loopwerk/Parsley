@@ -4,3 +4,5 @@
 /*.xcodeproj
 .swiftpm
 Package.resolved
+CLAUDE.md
+.claude

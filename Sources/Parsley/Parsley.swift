@@ -1,11 +1,11 @@
+import cmark_gfm
 import Foundation
-import CMarkGFM
 
 public enum MarkdownError: Error {
   case conversionFailed
 }
 
-public struct Parsley {
+public enum Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
   public static func html(
     _ content: String,
@@ -19,9 +19,11 @@ public struct Parsley {
 
     // Register syntax extensions
     for syntaxExtension in syntaxExtensions {
-      cmark_parser_attach_syntax_extension(parser, syntaxExtension.createPointer())
+      if let ext = syntaxExtension.createPointer() {
+        cmark_parser_attach_syntax_extension(parser, ext)
+      }
     }
-    
+
     // Pre-process markdown to extract title from code fence info
     let processedContent = preprocessCodeBlockTitles(content)
 
@@ -36,19 +38,18 @@ public struct Parsley {
     }
 
     // Render the ast into an html string
-    guard let htmlCString = cmark_render_html(&ast.pointee, options.rawValue, parser.pointee.syntax_extensions) else {
+    guard let htmlCString = cmark_render_html(&ast.pointee, options.rawValue, cmark_parser_get_syntax_extensions(parser)) else {
       throw MarkdownError.conversionFailed
     }
-    
+
     // Free memory
     cmark_parser_free(parser)
     cmark_node_free(ast)
-    cmark_release_plugins()
 
     defer {
       free(htmlCString)
     }
-    
+
     // Convert resulting c string to a Swift string
     guard let html = String(cString: htmlCString, encoding: String.Encoding.utf8) else {
       throw MarkdownError.conversionFailed

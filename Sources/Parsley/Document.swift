@@ -13,9 +13,9 @@ public struct Document {
   public let body: String
 
   /// Any metadata values found at the top of the Markdown document.
-  public let metadata: [String : String]
+  public let metadata: [String: String]
 
-  internal init(title: String?, rawBody: String, body: String, metadata: [String : String]) {
+  init(title: String?, rawBody: String, body: String, metadata: [String: String]) {
     self.title = title
     self.rawBody = rawBody
     self.body = body

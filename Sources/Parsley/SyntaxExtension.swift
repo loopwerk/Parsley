@@ -1,4 +1,5 @@
-import CMarkGFM
+import cmark_gfm
+import cmark_gfm_extensions
 
 /// An unsafe pointer to a syntax extension. Can only be used with one parser.
 public typealias SyntaxExtensionPointer = UnsafeMutablePointer<cmark_syntax_extension>
@@ -17,31 +18,36 @@ public enum SyntaxExtension {
   case tagfilter
   /// Adds the `- [ ] This is a task` syntax for creating tasklists.
   case tasklist
-  /// A custom syntax extension (currently it is easiest to make these in C and import them into Swift).
-  case custom(SyntaxExtensionInitializer)
+  /// A custom syntax extension looked up by name from the cmark-gfm registry.
+  case custom(String)
 
   /// The extensions enabled by default (all built-in GFM extensions).
   public static var defaultExtensions: [SyntaxExtension] {
     [.autolink, .strikethrough, .table, .tagfilter, .tasklist]
   }
 
+  /// The extension name used for registry lookup.
+  var extensionName: String {
+    switch self {
+      case .autolink: return "autolink"
+      case .strikethrough: return "strikethrough"
+      case .table: return "table"
+      case .tagfilter: return "tagfilter"
+      case .tasklist: return "tasklist"
+      case .custom(let name): return name
+    }
+  }
+
+  /// Ensures GFM core extensions are registered. Safe to call multiple times.
+  static func ensureRegistered() {
+    cmark_gfm_core_extensions_ensure_registered()
+  }
+
   /// Creates a pointer to an instance of the syntax extension.
   ///
   /// This pointer can only be used for a single parser because it gets freed along with the parser.
-  func createPointer() -> SyntaxExtensionPointer {
-    switch self {
-      case .autolink:
-        return create_autolink_extension()
-      case .strikethrough:
-        return create_strikethrough_extension()
-      case .table:
-        return create_table_extension()
-      case .tagfilter:
-        return create_tagfilter_extension()
-      case .tasklist:
-        return create_tasklist_extension()
-      case .custom(let syntaxExtensionInitializer):
-        return syntaxExtensionInitializer()
-    }
+  func createPointer() -> SyntaxExtensionPointer? {
+    SyntaxExtension.ensureRegistered()
+    return cmark_find_syntax_extension(extensionName)
   }
 }

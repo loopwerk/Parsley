@@ -5,12 +5,12 @@ public struct MarkdownOptions: OptionSet {
     self.rawValue = rawValue
   }
 
-  static public let sourcePosition = MarkdownOptions(rawValue: 1 << 1)
-  static public let hardBreaks = MarkdownOptions(rawValue: 1 << 2)
-  static public let safe = MarkdownOptions(rawValue: 1 << 3)
-  static public let noBreaks = MarkdownOptions(rawValue: 1 << 4)
-  static public let normalize = MarkdownOptions(rawValue: 1 << 8)
-  static public let validateUTF8 = MarkdownOptions(rawValue: 1 << 9)
-  static public let smartQuotes = MarkdownOptions(rawValue: 1 << 10)
-  static public let unsafe = MarkdownOptions(rawValue: 1 << 17)
+  public static let sourcePosition = MarkdownOptions(rawValue: 1 << 1)
+  public static let hardBreaks = MarkdownOptions(rawValue: 1 << 2)
+  public static let safe = MarkdownOptions(rawValue: 1 << 3)
+  public static let noBreaks = MarkdownOptions(rawValue: 1 << 4)
+  public static let normalize = MarkdownOptions(rawValue: 1 << 8)
+  public static let validateUTF8 = MarkdownOptions(rawValue: 1 << 9)
+  public static let smartQuotes = MarkdownOptions(rawValue: 1 << 10)
+  public static let unsafe = MarkdownOptions(rawValue: 1 << 17)
 }

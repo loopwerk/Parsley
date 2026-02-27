@@ -11,19 +11,23 @@ let package = Package(
   products: [
     .library(
       name: "Parsley",
-      targets: ["Parsley"]),
+      targets: ["Parsley"]
+    ),
   ],
   dependencies: [
-    .package(url: "https://github.com/stackotter/swift-cmark-gfm", from: "1.0.2")
+    .package(url: "https://github.com/swiftlang/swift-cmark.git", from: "0.7.1"),
   ],
   targets: [
     .target(
       name: "Parsley",
       dependencies: [
-        .product(name: "CMarkGFM", package: "swift-cmark-gfm")
-      ]),
+        .product(name: "cmark-gfm", package: "swift-cmark"),
+        .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
+      ]
+    ),
     .testTarget(
       name: "ParsleyTests",
-      dependencies: ["Parsley"])
+      dependencies: ["Parsley"]
+    ),
   ]
 )
