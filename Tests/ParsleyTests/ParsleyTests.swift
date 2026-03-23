@@ -517,4 +517,36 @@ final class ParsleyTests: XCTestCase {
     let result = try Parsley.html(input)
     XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
   }
+
+  func testAttributesAfterHorizontalRule() throws {
+    let input = "Some text\n\n---\n{.divider}"
+    let expectedOutput = "<p>Some text</p>\n<hr class=\"divider\" />"
+
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
+  }
+
+  func testAttributesAfterImage() throws {
+    let input = "![Alt text](image.png)\n{.hero}"
+    let expectedOutput = "<p><img src=\"image.png\" alt=\"Alt text\" class=\"hero\" /></p>"
+
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
+  }
+
+  func testAttributesAfterImageWithinParagraph() throws {
+    let input = "Some text ![Alt text](image.png)\n{.highlight}"
+    let expectedOutput = "<p class=\"highlight\">Some text <img src=\"image.png\" alt=\"Alt text\" /></p>"
+
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
+  }
+  
+  func testAttributesImageInRawParagraph() throws {
+    let input = "<p class=\"foo\"><img src=\"bar.jpg\" /></p>"
+    let expectedOutput = "<p class=\"foo\"><img src=\"bar.jpg\" /></p>"
+    
+    let result = try Parsley.html(input, options: .unsafe)
+    XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
+  }
 }

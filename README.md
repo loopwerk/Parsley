@@ -36,8 +36,93 @@ Parsley is available via Swift Package Manager and runs on macOS and Linux.
 Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
 
-## Code block titles
-Parsley supports adding a title (typically a filename) to fenced code blocks using the `title="..."` syntax:
+## Markdown attributes
+Parsley supports adding attributes to images and block-level elements using a syntax similar to [Hugo's markdown attributes](https://gohugo.io/content-management/markdown-attributes/). Attributes are specified inside curly braces `{...}` and support the following shorthand notations:
+
+| Notation | HTML result |
+|----------|------------|
+| `.myclass` | `class="myclass"` |
+| `#myid` | `id="myid"` |
+| `key="value"` | `key="value"` |
+
+Multiple classes are merged: `{.foo .bar}` becomes `class="foo bar"`.
+
+### Headings
+
+Attributes are placed at the end of the heading line:
+
+```markdown
+## My heading {.special #intro}
+```
+
+```html
+<h2 class="special" id="intro">My heading</h2>
+```
+
+### Fenced code blocks
+
+Attributes are placed after the language on the opening fence line:
+
+~~~markdown
+```python {.highlight data-title="views.py"}
+def hello():
+    print("Hello, World!")
+```
+~~~
+
+```html
+<pre class="highlight" data-title="views.py"><code class="language-python">def hello():
+    print("Hello, World!")
+</code></pre>
+```
+
+### Block elements
+
+For paragraphs, blockquotes, lists, horizontal rules, and tables, place the attributes on their own line directly after the element:
+
+```markdown
+This is a paragraph.
+{.note}
+
+> A blockquote.
+{.warning}
+
+* First
+* Second
+{.checklist}
+
+---
+{.divider}
+```
+
+```html
+<p class="note">This is a paragraph.</p>
+<blockquote class="warning">
+<p>A blockquote.</p>
+</blockquote>
+<ul class="checklist">
+<li>First</li>
+<li>Second</li>
+</ul>
+<hr class="divider" />
+```
+
+### Standalone images
+
+When an image is the only content in a paragraph, attributes are applied directly to the `<img>` element:
+
+```markdown
+![Alt text](image.png)
+{.hero}
+```
+
+```html
+<p><img src="image.png" alt="Alt text" class="hero" /></p>
+```
+
+### Code block title shorthand
+
+As a shorthand, code fence titles can also be specified without curly braces:
 
 ~~~markdown
 ```python title="views.py"
@@ -46,7 +131,7 @@ def hello():
 ```
 ~~~
 
-This generates HTML with a `data-title` attribute on the `<pre>` element:
+This is equivalent to `{data-title="views.py"}` and generates:
 
 ```html
 <pre data-title="views.py"><code class="language-python">def hello():

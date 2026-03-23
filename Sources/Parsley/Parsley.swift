@@ -29,14 +29,11 @@ public enum Parsley {
       }
     }
 
-    // Normalize old code fence title syntax to attribute syntax
-    var processedContent = normalizeCodeFenceTitles(content)
+    // Normalize old code fence title syntax: ```lang title="foo" → ```lang {data-title="foo"}
+    let normalizedContent = normalizeCodeFenceTitles(content)
 
     // Pre-process markdown: strip attributes and record them
-    var attributeStore = AttributeStore()
-    processedContent = preprocessCodeFenceAttributes(&attributeStore, processedContent)
-    processedContent = preprocessHeadingAttributes(&attributeStore, processedContent)
-    processedContent = preprocessBlockAttributes(&attributeStore, processedContent)
+    let (processedContent, attributeStore) = preprocessAttributes(normalizedContent)
 
     // Parse into an ast
     processedContent.withCString {
@@ -183,134 +180,95 @@ private extension Parsley {
     )
   }
 
-  /// Strips `{...}` from code fence info lines and records attributes.
-  /// Counts all code fences to track absolute indices.
-  static func preprocessCodeFenceAttributes(_ store: inout AttributeStore, _ markdown: String) -> String {
-    let fencePattern = #"```(\S+)"#
-    let attrPattern = #"```(\S+)\h+\{([^}]+)\}"#
-    guard let fenceRegex = try? NSRegularExpression(pattern: fencePattern),
-          let attrRegex = try? NSRegularExpression(pattern: attrPattern) else { return markdown }
+  // Regex patterns used during preprocessing
+  static let codeFenceAttrPattern = try! NSRegularExpression(pattern: #"^```(\S+)\h+\{([^}]+)\}$"#)
+  static let codeFencePattern = try! NSRegularExpression(pattern: #"^```"#)
+  static let headingAttrPattern = try! NSRegularExpression(pattern: #"^(>?\s*)(#{1,6})\s+(.+?)\s+\{([^}]+)\}\s*$"#)
+  static let headingPattern = try! NSRegularExpression(pattern: #"^>?\s*(#{1,6})\s+"#)
+  static let rawHtmlHeadingPattern = try! NSRegularExpression(pattern: #"^>?\s*<h([1-6])[\s>]"#)
+  static let blockAttrPattern = try! NSRegularExpression(pattern: #"^\{([^}]+)\}\s*$"#)
 
-    let nsString = markdown as NSString
-    let allFences = fenceRegex.matches(in: markdown, range: NSRange(location: 0, length: nsString.length))
-    let attrFences = attrRegex.matches(in: markdown, range: NSRange(location: 0, length: nsString.length))
-
-    // Build a set of locations that have attributes
-    let attrLocations = Set(attrFences.map { $0.range.location })
-
-    // Record absolute index for each attributed fence
-    for (index, fence) in allFences.enumerated() {
-      if attrLocations.contains(fence.range.location) {
-        let attrMatch = attrFences.first { $0.range.location == fence.range.location }!
-        let attrsContent = nsString.substring(with: attrMatch.range(at: 2))
-        store.entries.append((target: .codeFence(index), attrs: parseAttributes(attrsContent)))
-      }
-    }
-
-    // Strip attributes from markdown (in reverse to preserve indices)
-    var result = markdown
-    for match in attrFences.reversed() {
-      let fullRange = Range(match.range, in: result)!
-      let lang = nsString.substring(with: match.range(at: 1))
-      result.replaceSubrange(fullRange, with: "```\(lang)")
-    }
-    return result
-  }
-
-  /// Strips `{...}` from heading lines and records attributes.
-  /// Counts all headings per level (including raw HTML headings) to track absolute indices.
-  static func preprocessHeadingAttributes(_ store: inout AttributeStore, _ markdown: String) -> String {
-    let mdPattern = #"(#{1,6})\s+(.+?)$"#
-    let attrPattern = #"(#{1,6})\s+(.+?)\s+\{([^}]+)\}\s*$"#
-    let rawHtmlPattern = #"<h([1-6])[\s>]"#
-    guard let mdRegex = try? NSRegularExpression(pattern: mdPattern, options: .anchorsMatchLines),
-          let attrRegex = try? NSRegularExpression(pattern: attrPattern, options: .anchorsMatchLines),
-          let rawHtmlRegex = try? NSRegularExpression(pattern: rawHtmlPattern, options: .anchorsMatchLines) else { return markdown }
-
-    let nsString = markdown as NSString
-    let mdHeadings = mdRegex.matches(in: markdown, range: NSRange(location: 0, length: nsString.length))
-    let attrHeadings = attrRegex.matches(in: markdown, range: NSRange(location: 0, length: nsString.length))
-    let rawHtmlHeadings = rawHtmlRegex.matches(in: markdown, range: NSRange(location: 0, length: nsString.length))
-
-    // Merge all headings by location so we can compute absolute indices
-    struct HeadingInfo: Comparable {
-      let location: Int
-      let level: Int
-      let isAttributed: Bool
-      static func < (lhs: HeadingInfo, rhs: HeadingInfo) -> Bool { lhs.location < rhs.location }
-    }
-
-    let attrLocations = Set(attrHeadings.map { $0.range.location })
-
-    var allHeadings: [HeadingInfo] = []
-    for match in mdHeadings {
-      let level = nsString.substring(with: match.range(at: 1)).count
-      allHeadings.append(HeadingInfo(location: match.range.location, level: level, isAttributed: attrLocations.contains(match.range.location)))
-    }
-    for match in rawHtmlHeadings {
-      let level = Int(nsString.substring(with: match.range(at: 1)))!
-      allHeadings.append(HeadingInfo(location: match.range.location, level: level, isAttributed: false))
-    }
-    allHeadings.sort()
-
-    // Count per level and record absolute index for attributed ones
-    var levelCounts: [Int: Int] = [:]
-    for heading in allHeadings {
-      let index = levelCounts[heading.level, default: 0]
-      levelCounts[heading.level] = index + 1
-
-      if heading.isAttributed {
-        let attrMatch = attrHeadings.first { $0.range.location == heading.location }!
-        let attrsContent = nsString.substring(with: attrMatch.range(at: 3))
-        store.entries.append((target: .heading(heading.level, index), attrs: parseAttributes(attrsContent)))
-      }
-    }
-
-    // Strip attributes from markdown (in reverse to preserve indices)
-    var result = markdown
-    for match in attrHeadings.reversed() {
-      let hashes = nsString.substring(with: match.range(at: 1))
-      let title = nsString.substring(with: match.range(at: 2))
-      let fullRange = Range(match.range, in: result)!
-      result.replaceSubrange(fullRange, with: "\(hashes) \(title)")
-    }
-    return result
-  }
-
-  /// Strips `{...}` from block elements (on its own line) and records attributes.
-  /// Skips lines inside code fences. Tracks which block-level element each attribute applies to.
-  static func preprocessBlockAttributes(_ store: inout AttributeStore, _ markdown: String) -> String {
-    let attrPattern = try? NSRegularExpression(pattern: #"^\{([^}]+)\}\s*$"#)
+  /// Single-pass preprocessor: walks markdown line by line, strips `{...}` attributes,
+  /// and records what they apply to. Handles code fences, headings, and block elements.
+  static func preprocessAttributes(_ markdown: String) -> (String, AttributeStore) {
+    var store = AttributeStore()
     var lines = markdown.components(separatedBy: "\n")
     var inCodeFence = false
-    var indicesToRemove: [Int] = []
+    var codeFenceCount = 0
+    var headingCounts: [Int: Int] = [:]
     var blockCount = 0
     var inBlock = false
+    var indicesToRemove: [Int] = []
 
     for (i, line) in lines.enumerated() {
-      if line.hasPrefix("```") {
+      let nsLine = line as NSString
+      let range = NSRange(location: 0, length: nsLine.length)
+
+      // Code fence opening/closing
+      if codeFencePattern.firstMatch(in: line, range: range) != nil {
         if !inCodeFence {
+          if let match = codeFenceAttrPattern.firstMatch(in: line, range: range) {
+            let lang = nsLine.substring(with: match.range(at: 1))
+            let attrsContent = nsLine.substring(with: match.range(at: 2))
+            store.entries.append((target: .codeFence(codeFenceCount), attrs: parseAttributes(attrsContent)))
+            lines[i] = "```\(lang)"
+          }
+          codeFenceCount += 1
           blockCount += 1
           inBlock = false
         }
         inCodeFence = !inCodeFence
         continue
       }
+
       if inCodeFence { continue }
 
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
+      // Heading with attributes: ## Title {.foo} (optionally inside > blockquote)
+      if let match = headingAttrPattern.firstMatch(in: line, range: range) {
+        let prefix = nsLine.substring(with: match.range(at: 1))
+        let hashes = nsLine.substring(with: match.range(at: 2))
+        let level = hashes.count
+        let title = nsLine.substring(with: match.range(at: 3))
+        let attrsContent = nsLine.substring(with: match.range(at: 4))
+        let index = headingCounts[level, default: 0]
+        store.entries.append((target: .heading(level, index), attrs: parseAttributes(attrsContent)))
+        headingCounts[level] = index + 1
+        lines[i] = "\(prefix)\(hashes) \(title)"
+        if !inBlock { blockCount += 1 }
+        inBlock = false
+        continue
+      }
 
-      // Check if this line is an attribute
-      let range = NSRange(line.startIndex..., in: line)
-      if let match = attrPattern?.firstMatch(in: line, range: range),
-         let attrsRange = Range(match.range(at: 1), in: line) {
-        // This attribute applies to the block element that precedes it
-        store.entries.append((target: .block(blockCount - 1), attrs: parseAttributes(String(line[attrsRange]))))
+      // Heading without attributes (still need to count it)
+      if headingPattern.firstMatch(in: line, range: range) != nil {
+        let stripped = line.drop(while: { $0 == ">" || $0 == " " })
+        let level = stripped.prefix(while: { $0 == "#" }).count
+        headingCounts[level] = headingCounts[level, default: 0] + 1
+        if !inBlock { blockCount += 1 }
+        inBlock = false
+        continue
+      }
+
+      // Raw HTML heading (count it so indices stay correct)
+      if let match = rawHtmlHeadingPattern.firstMatch(in: line, range: range) {
+        let level = Int(nsLine.substring(with: match.range(at: 1)))!
+        headingCounts[level] = headingCounts[level, default: 0] + 1
+        if !inBlock { blockCount += 1 }
+        inBlock = false
+        continue
+      }
+
+      // Block attribute: {.foo} on its own line
+      if let match = blockAttrPattern.firstMatch(in: line, range: range) {
+        let attrsContent = nsLine.substring(with: match.range(at: 1))
+        store.entries.append((target: .block(blockCount - 1), attrs: parseAttributes(attrsContent)))
         indicesToRemove.append(i)
         inBlock = false
         continue
       }
 
+      // Track block elements for block attribute indexing
+      let trimmed = line.trimmingCharacters(in: .whitespaces)
       if trimmed.isEmpty {
         inBlock = false
       } else if !inBlock {
@@ -323,7 +281,7 @@ private extension Parsley {
       lines.remove(at: i)
     }
 
-    return lines.joined(separator: "\n")
+    return (lines.joined(separator: "\n"), store)
   }
 
   /// Applies recorded attributes to HTML elements.
@@ -358,14 +316,32 @@ private extension Parsley {
   }
 
   /// Applies attributes to the Nth block-level element in HTML.
+  /// For `<p>` tags containing only a standalone `<img>`, attributes are applied to the `<img>` instead.
   static func applyNthBlockAttribute(_ html: String, n: Int, attrs: String) -> String {
     let blockPattern = #"<(p|blockquote|ul|ol|table|hr)([ >])"#
     guard let regex = try? NSRegularExpression(pattern: blockPattern) else { return html }
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
     guard n >= 0, n < matches.count else { return html }
     let match = matches[n]
-    let range = Range(match.range, in: html)!
     let tag = String(html[Range(match.range(at: 1), in: html)!])
+
+    // Check if this is a <p> containing only a standalone <img>
+    if tag == "p" {
+      let standaloneImgPattern = #"<p>(<img [^>]+/>)</p>"#
+      if let imgRegex = try? NSRegularExpression(pattern: standaloneImgPattern) {
+        let searchStart = Range(match.range, in: html)!.lowerBound
+        let searchRange = NSRange(searchStart..., in: html)
+        if let imgMatch = imgRegex.firstMatch(in: html, range: searchRange),
+           imgMatch.range.location == match.range.location {
+          let imgTag = (html as NSString).substring(with: imgMatch.range(at: 1))
+          let newImg = imgTag.replacingOccurrences(of: " />", with: " \(attrs) />")
+          let fullRange = Range(imgMatch.range, in: html)!
+          return html.replacingCharacters(in: fullRange, with: "<p>\(newImg)</p>")
+        }
+      }
+    }
+
+    let range = Range(match.range, in: html)!
     let suffix = String(html[Range(match.range(at: 2), in: html)!])
     return html.replacingCharacters(in: range, with: "<\(tag) \(attrs)\(suffix)")
   }
