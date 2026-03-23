@@ -98,9 +98,26 @@ private extension Parsley {
     var entries: [(target: AttributeTarget, attrs: String)] = []
   }
 
+  // Allowlist of HTML global attributes, matching goldmark's GlobalAttributeFilter.
+  // class and id are handled separately via shorthand syntax.
+  static let allowedAttributes: Set<String> = [
+    "accesskey", "autocapitalize", "autofocus", "contenteditable", "dir",
+    "draggable", "enterkeyhint", "hidden", "inert", "inputmode", "is",
+    "itemid", "itemprop", "itemref", "itemscope", "itemtype", "lang",
+    "part", "role", "slot", "spellcheck", "style", "tabindex", "title",
+    "translate",
+  ]
+
+  /// Returns true if the attribute name is allowed (in the allowlist or a `data-*` attribute).
+  static func isAllowedAttribute(_ name: String) -> Bool {
+    let lower = name.lowercased()
+    return lower.hasPrefix("data-") || allowedAttributes.contains(lower)
+  }
+
   /// Parses attribute content like `.foo .bar #baz key="value"` into an HTML attribute string.
   static func parseAttributes(_ input: String) -> String {
     var classes: [String] = []
+    var id: String?
     var parts: [String] = []
 
     let scanner = Scanner(string: input)
@@ -113,7 +130,9 @@ private extension Parsley {
         }
       } else if scanner.scanString("#") != nil {
         if let name = scanner.scanCharacters(from: .idChars) {
-          parts.append("id=\"\(name)\"")
+          if id == nil {
+            id = name
+          }
         }
       } else if let key = scanner.scanCharacters(from: .attributeNameChars) {
         if scanner.scanString("=") != nil {
@@ -121,14 +140,14 @@ private extension Parsley {
             let value = scanQuotedValue(scanner)
             if key == "class" {
               classes.append(contentsOf: value.split(separator: " ").map(String.init))
-            } else {
+            } else if isAllowedAttribute(key) {
               let escaped = value.replacingOccurrences(of: "\"", with: "&quot;")
               parts.append("\(key)=\"\(escaped)\"")
             }
           } else if let value = scanner.scanCharacters(from: .attributeNameChars) {
             if key == "class" {
               classes.append(value)
-            } else {
+            } else if isAllowedAttribute(key) {
               parts.append("\(key)=\"\(value)\"")
             }
           }
@@ -142,6 +161,9 @@ private extension Parsley {
     var result: [String] = []
     if !classes.isEmpty {
       result.append("class=\"\(classes.joined(separator: " "))\"")
+    }
+    if let id = id {
+      result.append("id=\"\(id)\"")
     }
     result.append(contentsOf: parts)
     return result.joined(separator: " ")
@@ -182,7 +204,7 @@ private extension Parsley {
   }
 
   // Regex patterns used during preprocessing
-  static let codeFenceAttrPattern = try! NSRegularExpression(pattern: #"^```(\S+)\h+\{([^}]+)\}$"#)
+  static let codeFenceAttrPattern = try! NSRegularExpression(pattern: #"^```([^{\s]+)?\s*\{([^}]+)\}$"#)
   static let codeFencePattern = try! NSRegularExpression(pattern: #"^```"#)
   static let headingAttrPattern = try! NSRegularExpression(pattern: #"^(>?\s*)(#{1,6})\s+(.+?)\s+\{([^}]+)\}\s*$"#)
   static let headingPattern = try! NSRegularExpression(pattern: #"^>?\s*(#{1,6})\s+"#)
@@ -210,7 +232,8 @@ private extension Parsley {
       if codeFencePattern.firstMatch(in: line, range: range) != nil {
         if !inCodeFence {
           if let match = codeFenceAttrPattern.firstMatch(in: line, range: range) {
-            let lang = nsLine.substring(with: match.range(at: 1))
+            let langRange = match.range(at: 1)
+            let lang = langRange.location != NSNotFound ? nsLine.substring(with: langRange) : ""
             let attrsContent = nsLine.substring(with: match.range(at: 2))
             store.entries.append((target: .codeFence(codeFenceCount), attrs: parseAttributes(attrsContent)))
             lines[i] = "```\(lang)"
@@ -292,7 +315,7 @@ private extension Parsley {
   static func applyAttributes(_ store: AttributeStore, _ html: String) -> String {
     var result = html
 
-    for entry in store.entries {
+    for entry in store.entries where !entry.attrs.isEmpty {
       switch entry.target {
         case .codeFence(let index):
           result = applyNthAttribute(result, tag: "pre", n: index, attrs: entry.attrs)

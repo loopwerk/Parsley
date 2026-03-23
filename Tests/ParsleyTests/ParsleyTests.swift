@@ -648,6 +648,91 @@ final class ParsleyTests: XCTestCase {
     XCTAssertEqual(result, "<h1 class=\"a\">H1</h1>\n<h2 class=\"b\">H2</h2>\n<h3 class=\"c\">H3</h3>\n")
   }
 
+  func testEmptyAttributes() throws {
+    let input = "## Title {}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2>Title {}</h2>\n")
+  }
+
+  func testHeadingAttributesIgnoredWithoutOption() throws {
+    let input = "## Title {.special}"
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result, "<h2>Title {.special}</h2>\n")
+  }
+
+  func testCodeFenceWithoutLanguage() throws {
+    let input = """
+    ```{.highlight}
+    code()
+    ```
+    """
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result, "<pre class=\"highlight\"><code>code()\n</code></pre>\n")
+  }
+
+  func testHeadingWithInlineMarkdown() throws {
+    let input = "## **Bold** and *italic* {.styled}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2 class=\"styled\"><strong>Bold</strong> and <em>italic</em></h2>\n")
+  }
+
+  func testMultipleIds() throws {
+    let input = "## Title {#first #second}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2 id=\"first\">Title</h2>\n")
+  }
+
+  func testBlockAttributeAtDocumentStart() throws {
+    // {.highlight} as first line targets block index -1, which is out of bounds
+    let input = "{.highlight}\nSome text"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<p>Some text</p>\n")
+  }
+
+  func testDangerousAttributeValues() throws {
+    let input = "## Title {onclick=\"alert(1)\"}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2>Title</h2>\n")
+  }
+
+  func testDangerousAttributeValuesKeepsValid() throws {
+    let input = "## Title {onclick=\"alert(1)\" #id}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2 id=\"id\">Title</h2>\n")
+  }
+  
+  func testMultipleBlankLinesBeforeBlockAttribute() throws {
+    let input = "First\n\n\n\nSecond\n{.highlight}"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<p>First</p>\n<p class=\"highlight\">Second</p>\n")
+  }
+
+  func testAttributesWithExtraWhitespace() throws {
+    let input = "## Title {  .foo   #bar   data-x=\"y\"  }"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2 class=\"foo\" id=\"bar\" data-x=\"y\">Title</h2>\n")
+  }
+
+  func testBlockAttributeTargetsCorrectParagraph() throws {
+    let input = "First\n\nSecond\n{.middle}\n\nThird"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<p>First</p>\n<p class=\"middle\">Second</p>\n<p>Third</p>\n")
+  }
+
+  func testCodeFenceAttributesDontLeakToNext() throws {
+    let input = """
+    ```python {.first}
+    code1()
+    ```
+
+    ```python {.second}
+    code2()
+    ```
+    """
+    let result = try Parsley.html(input)
+    XCTAssertEqual(result, "<pre class=\"first\"><code class=\"language-python\">code1()\n</code></pre>\n<pre class=\"second\"><code class=\"language-python\">code2()\n</code></pre>\n")
+  }
+
   func testCRLFLineEndings() throws {
     let input = "---\r\nauthor: Kevin\r\n---\r\n# Title\r\nBody"
     let markdown = try Parsley.parse(input)
