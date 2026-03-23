@@ -14,11 +14,14 @@ public enum Parsley {
   /// This parses a String into HTML, without parsing Metadata or the document title.
   public static func html(
     _ content: String,
-    options: MarkdownOptions = [.safe],
+    options: MarkdownOptions = [],
     syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
   ) throws -> String {
+    let enableAttributes = options.contains(.markdownAttributes)
+    let cmarkOptions = options.subtracting(.markdownAttributes)
+
     // Create parser
-    guard let parser = cmark_parser_new(options.rawValue) else {
+    guard let parser = cmark_parser_new(cmarkOptions.rawValue) else {
       throw MarkdownError.conversionFailed
     }
 
@@ -30,10 +33,11 @@ public enum Parsley {
     }
 
     // Normalize old code fence title syntax: ```lang title="foo" → ```lang {data-title="foo"}
-    let normalizedContent = normalizeCodeFenceTitles(content)
+    var processedContent = normalizeCodeFenceTitles(content)
 
     // Pre-process markdown: strip attributes and record them
-    let (processedContent, attributeStore) = preprocessAttributes(normalizedContent)
+    let attributeStore: AttributeStore
+    (processedContent, attributeStore) = preprocessAttributes(processedContent, includeBlockAttributes: enableAttributes)
 
     // Parse into an ast
     processedContent.withCString {
@@ -46,7 +50,7 @@ public enum Parsley {
     }
 
     // Render the ast into an html string
-    guard let htmlCString = cmark_render_html(&ast.pointee, options.rawValue, cmark_parser_get_syntax_extensions(parser)) else {
+    guard let htmlCString = cmark_render_html(&ast.pointee, cmarkOptions.rawValue, cmark_parser_get_syntax_extensions(parser)) else {
       throw MarkdownError.conversionFailed
     }
 
@@ -189,8 +193,9 @@ private extension Parsley {
   static let blockAttrPattern = try! NSRegularExpression(pattern: #"^\{([^}]+)\}\s*$"#)
 
   /// Single-pass preprocessor: walks markdown line by line, strips `{...}` attributes,
-  /// and records what they apply to. Handles code fences, headings, and block elements.
-  static func preprocessAttributes(_ markdown: String) -> (String, AttributeStore) {
+  /// and records what they apply to. Code fence attributes are always processed.
+  /// Heading and block attributes are only processed when `includeBlockAttributes` is true.
+  static func preprocessAttributes(_ markdown: String, includeBlockAttributes: Bool) -> (String, AttributeStore) {
     var store = AttributeStore()
     var lines = markdown.components(separatedBy: "\n")
     var inCodeFence = false
@@ -223,57 +228,59 @@ private extension Parsley {
 
       if inCodeFence { continue }
 
-      // Heading with attributes: ## Title {.foo} (optionally inside > blockquote)
-      if let match = headingAttrPattern.firstMatch(in: line, range: range) {
-        let prefix = nsLine.substring(with: match.range(at: 1))
-        let hashes = nsLine.substring(with: match.range(at: 2))
-        let level = hashes.count
-        let title = nsLine.substring(with: match.range(at: 3))
-        let attrsContent = nsLine.substring(with: match.range(at: 4))
-        let index = headingCounts[level, default: 0]
-        store.entries.append((target: .heading(level, index), attrs: parseAttributes(attrsContent)))
-        headingCounts[level] = index + 1
-        lines[i] = "\(prefix)\(hashes) \(title)"
-        if !inBlock { blockCount += 1 }
-        inBlock = false
-        continue
-      }
+      if includeBlockAttributes {
+        // Heading with attributes: ## Title {.foo} (optionally inside > blockquote)
+        if let match = headingAttrPattern.firstMatch(in: line, range: range) {
+          let prefix = nsLine.substring(with: match.range(at: 1))
+          let hashes = nsLine.substring(with: match.range(at: 2))
+          let level = hashes.count
+          let title = nsLine.substring(with: match.range(at: 3))
+          let attrsContent = nsLine.substring(with: match.range(at: 4))
+          let index = headingCounts[level, default: 0]
+          store.entries.append((target: .heading(level, index), attrs: parseAttributes(attrsContent)))
+          headingCounts[level] = index + 1
+          lines[i] = "\(prefix)\(hashes) \(title)"
+          if !inBlock { blockCount += 1 }
+          inBlock = false
+          continue
+        }
 
-      // Heading without attributes (still need to count it)
-      if headingPattern.firstMatch(in: line, range: range) != nil {
-        let stripped = line.drop(while: { $0 == ">" || $0 == " " })
-        let level = stripped.prefix(while: { $0 == "#" }).count
-        headingCounts[level] = headingCounts[level, default: 0] + 1
-        if !inBlock { blockCount += 1 }
-        inBlock = false
-        continue
-      }
+        // Heading without attributes (still need to count it)
+        if headingPattern.firstMatch(in: line, range: range) != nil {
+          let stripped = line.drop(while: { $0 == ">" || $0 == " " })
+          let level = stripped.prefix(while: { $0 == "#" }).count
+          headingCounts[level] = headingCounts[level, default: 0] + 1
+          if !inBlock { blockCount += 1 }
+          inBlock = false
+          continue
+        }
 
-      // Raw HTML heading (count it so indices stay correct)
-      if let match = rawHtmlHeadingPattern.firstMatch(in: line, range: range) {
-        let level = Int(nsLine.substring(with: match.range(at: 1)))!
-        headingCounts[level] = headingCounts[level, default: 0] + 1
-        if !inBlock { blockCount += 1 }
-        inBlock = false
-        continue
-      }
+        // Raw HTML heading (count it so indices stay correct)
+        if let match = rawHtmlHeadingPattern.firstMatch(in: line, range: range) {
+          let level = Int(nsLine.substring(with: match.range(at: 1)))!
+          headingCounts[level] = headingCounts[level, default: 0] + 1
+          if !inBlock { blockCount += 1 }
+          inBlock = false
+          continue
+        }
 
-      // Block attribute: {.foo} on its own line
-      if let match = blockAttrPattern.firstMatch(in: line, range: range) {
-        let attrsContent = nsLine.substring(with: match.range(at: 1))
-        store.entries.append((target: .block(blockCount - 1), attrs: parseAttributes(attrsContent)))
-        indicesToRemove.append(i)
-        inBlock = false
-        continue
-      }
+        // Block attribute: {.foo} on its own line
+        if let match = blockAttrPattern.firstMatch(in: line, range: range) {
+          let attrsContent = nsLine.substring(with: match.range(at: 1))
+          store.entries.append((target: .block(blockCount - 1), attrs: parseAttributes(attrsContent)))
+          indicesToRemove.append(i)
+          inBlock = false
+          continue
+        }
 
-      // Track block elements for block attribute indexing
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
-      if trimmed.isEmpty {
-        inBlock = false
-      } else if !inBlock {
-        blockCount += 1
-        inBlock = true
+        // Track block elements for block attribute indexing
+        let trimmed = line.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+          inBlock = false
+        } else if !inBlock {
+          blockCount += 1
+          inBlock = true
+        }
       }
     }
 

@@ -36,8 +36,61 @@ Parsley is available via Swift Package Manager and runs on macOS and Linux.
 Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
 
+## Code block attributes
+Parsley supports adding attributes to fenced code blocks. Attributes are placed after the language on the opening fence line using curly braces:
+
+~~~markdown
+```python {.highlight data-title="views.py"}
+def hello():
+    print("Hello, World!")
+```
+~~~
+
+```html
+<pre class="highlight" data-title="views.py"><code class="language-python">def hello():
+    print("Hello, World!")
+</code></pre>
+```
+
+As a shorthand, a title can also be specified without curly braces:
+
+~~~markdown
+```python title="views.py"
+def hello():
+    print("Hello, World!")
+```
+~~~
+
+This is equivalent to `{data-title="views.py"}` and generates:
+
+```html
+<pre data-title="views.py"><code class="language-python">def hello():
+    print("Hello, World!")
+</code></pre>
+```
+
+You can then use CSS to display the title, for example:
+
+```css
+pre[data-title]::before {
+  content: attr(data-title);
+  display: block;
+  background: #1a1a1a;
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  border-bottom: 1px solid #333;
+}
+```
+
 ## Markdown attributes
-Parsley supports adding attributes to images and block-level elements using a syntax similar to [Hugo's markdown attributes](https://gohugo.io/content-management/markdown-attributes/). Attributes are specified inside curly braces `{...}` and support the following shorthand notations:
+With the `.markdownAttributes` option, Parsley supports adding attributes to headings, images, and other block-level elements using a syntax similar to [Hugo's markdown attributes](https://gohugo.io/content-management/markdown-attributes/):
+
+```swift
+let html = try Parsley.html(input, options: [.markdownAttributes])
+let document = try Parsley.parse(input, options: [.markdownAttributes])
+```
+
+Attributes are specified inside curly braces `{...}` and support the following shorthand notations:
 
 | Notation | HTML result |
 |----------|------------|
@@ -57,23 +110,6 @@ Attributes are placed at the end of the heading line:
 
 ```html
 <h2 class="special" id="intro">My heading</h2>
-```
-
-### Fenced code blocks
-
-Attributes are placed after the language on the opening fence line:
-
-~~~markdown
-```python {.highlight data-title="views.py"}
-def hello():
-    print("Hello, World!")
-```
-~~~
-
-```html
-<pre class="highlight" data-title="views.py"><code class="language-python">def hello():
-    print("Hello, World!")
-</code></pre>
 ```
 
 ### Block elements
@@ -118,38 +154,6 @@ When an image is the only content in a paragraph, attributes are applied directl
 
 ```html
 <p><img src="image.png" alt="Alt text" class="hero" /></p>
-```
-
-### Code block title shorthand
-
-As a shorthand, code fence titles can also be specified without curly braces:
-
-~~~markdown
-```python title="views.py"
-def hello():
-    print("Hello, World!")
-```
-~~~
-
-This is equivalent to `{data-title="views.py"}` and generates:
-
-```html
-<pre data-title="views.py"><code class="language-python">def hello():
-    print("Hello, World!")
-</code></pre>
-```
-
-You can then use CSS to display the title, for example:
-
-```css
-pre[data-title]::before {
-  content: attr(data-title);
-  display: block;
-  background: #1a1a1a;
-  padding: 0.5em 1em;
-  font-size: 0.85em;
-  border-bottom: 1px solid #333;
-}
 ```
 
 ## Modifying the generated HTML
