@@ -17,6 +17,7 @@ public enum Parsley {
     options: MarkdownOptions = [],
     syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
   ) throws -> String {
+    let content = content.replacingOccurrences(of: "\r\n", with: "\n")
     let enableAttributes = options.contains(.markdownAttributes)
     let cmarkOptions = options.subtracting(.markdownAttributes)
 
@@ -24,6 +25,7 @@ public enum Parsley {
     guard let parser = cmark_parser_new(cmarkOptions.rawValue) else {
       throw MarkdownError.conversionFailed
     }
+    defer { cmark_parser_free(parser) }
 
     // Register syntax extensions
     for syntaxExtension in syntaxExtensions {
@@ -48,19 +50,13 @@ public enum Parsley {
     guard let ast = cmark_parser_finish(parser) else {
       throw MarkdownError.conversionFailed
     }
+    defer { cmark_node_free(ast) }
 
     // Render the ast into an html string
     guard let htmlCString = cmark_render_html(&ast.pointee, cmarkOptions.rawValue, cmark_parser_get_syntax_extensions(parser)) else {
       throw MarkdownError.conversionFailed
     }
-
-    // Free memory
-    cmark_parser_free(parser)
-    cmark_node_free(ast)
-
-    defer {
-      free(htmlCString)
-    }
+    defer { free(htmlCString) }
 
     // Convert resulting c string to a Swift string
     guard let html = String(cString: htmlCString, encoding: String.Encoding.utf8) else {
@@ -77,6 +73,7 @@ public enum Parsley {
     options: MarkdownOptions = [.safe],
     syntaxExtensions: [SyntaxExtension] = SyntaxExtension.defaultExtensions
   ) throws -> Document {
+    let content = content.replacingOccurrences(of: "\r\n", with: "\n")
     let (header, title, rawBody) = Parsley.parts(from: content)
 
     let metadata = Parsley.metadata(from: header)
@@ -317,8 +314,10 @@ private extension Parsley {
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
     guard n < matches.count else { return html }
     let match = matches[n]
-    let range = Range(match.range, in: html)!
-    let suffix = String(html[Range(match.range(at: 1), in: html)!])
+    guard let range = Range(match.range, in: html),
+          let suffixRange = Range(match.range(at: 1), in: html)
+    else { return html }
+    let suffix = String(html[suffixRange])
     return html.replacingCharacters(in: range, with: "<\(tag) \(attrs)\(suffix)")
   }
 
@@ -330,27 +329,31 @@ private extension Parsley {
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
     guard n >= 0, n < matches.count else { return html }
     let match = matches[n]
-    let tag = String(html[Range(match.range(at: 1), in: html)!])
+    guard let tagRange = Range(match.range(at: 1), in: html) else { return html }
+    let tag = String(html[tagRange])
 
     // Check if this is a <p> containing only a standalone <img>
     if tag == "p" {
       let standaloneImgPattern = #"<p>(<img [^>]+/>)</p>"#
-      if let imgRegex = try? NSRegularExpression(pattern: standaloneImgPattern) {
-        let searchStart = Range(match.range, in: html)!.lowerBound
+      if let imgRegex = try? NSRegularExpression(pattern: standaloneImgPattern),
+         let searchStart = Range(match.range, in: html)?.lowerBound
+      {
         let searchRange = NSRange(searchStart..., in: html)
         if let imgMatch = imgRegex.firstMatch(in: html, range: searchRange),
-           imgMatch.range.location == match.range.location
+           imgMatch.range.location == match.range.location,
+           let fullRange = Range(imgMatch.range, in: html)
         {
           let imgTag = (html as NSString).substring(with: imgMatch.range(at: 1))
           let newImg = imgTag.replacingOccurrences(of: " />", with: " \(attrs) />")
-          let fullRange = Range(imgMatch.range, in: html)!
           return html.replacingCharacters(in: fullRange, with: "<p>\(newImg)</p>")
         }
       }
     }
 
-    let range = Range(match.range, in: html)!
-    let suffix = String(html[Range(match.range(at: 2), in: html)!])
+    guard let range = Range(match.range, in: html),
+          let suffixRange = Range(match.range(at: 2), in: html)
+    else { return html }
+    let suffix = String(html[suffixRange])
     return html.replacingCharacters(in: range, with: "<\(tag) \(attrs)\(suffix)")
   }
 
