@@ -36,8 +36,27 @@ Parsley is available via Swift Package Manager and runs on macOS and Linux.
 Parsley can be used as a reader in the static site generator [Saga](https://github.com/loopwerk/Saga), using [SagaParsleyMarkdownReader](https://github.com/loopwerk/SagaParsleyMarkdownReader).
 
 
-## Code block attributes
-Parsley supports adding attributes to fenced code blocks. Attributes are placed after the language on the opening fence line using curly braces:
+## Markdown attributes
+Parsley supports adding attributes to Markdown elements using curly braces `{...}` with the following shorthand notations:
+
+| Notation | HTML result |
+|----------|------------|
+| `.myclass` | `class="myclass"` |
+| `#myid` | `id="myid"` |
+| `key="value"` | `key="value"` |
+
+Multiple classes are merged: `{.foo .bar}` becomes `class="foo bar"`.
+
+Attributes on **code blocks** are always enabled. For **headings, images, and other block-level elements**, you need to opt in with the `.markdownAttributes` option:
+
+```swift
+let html = try Parsley.html(input, options: [.markdownAttributes])
+let document = try Parsley.parse(input, options: [.markdownAttributes])
+```
+
+### Code blocks
+
+Attributes are placed after the language on the opening fence line:
 
 ~~~markdown
 ```python {.highlight data-title="views.py"}
@@ -81,24 +100,6 @@ pre[data-title]::before {
   border-bottom: 1px solid #333;
 }
 ```
-
-## Markdown attributes
-With the `.markdownAttributes` option, Parsley supports adding attributes to headings, images, and other block-level elements using a syntax similar to [Hugo's markdown attributes](https://gohugo.io/content-management/markdown-attributes/):
-
-```swift
-let html = try Parsley.html(input, options: [.markdownAttributes])
-let document = try Parsley.parse(input, options: [.markdownAttributes])
-```
-
-Attributes are specified inside curly braces `{...}` and support the following shorthand notations:
-
-| Notation | HTML result |
-|----------|------------|
-| `.myclass` | `class="myclass"` |
-| `#myid` | `id="myid"` |
-| `key="value"` | `key="value"` |
-
-Multiple classes are merged: `{.foo .bar}` becomes `class="foo bar"`.
 
 ### Headings
 
