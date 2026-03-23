@@ -541,11 +541,11 @@ final class ParsleyTests: XCTestCase {
     let result = try Parsley.html(input, options: [.markdownAttributes])
     XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
   }
-  
+
   func testAttributesImageInRawParagraph() throws {
     let input = "<p class=\"foo\"><img src=\"bar.jpg\" /></p>"
     let expectedOutput = "<p class=\"foo\"><img src=\"bar.jpg\" /></p>"
-    
+
     let result = try Parsley.html(input, options: .unsafe)
     XCTAssertEqual(result.trimmingCharacters(in: .newlines), expectedOutput)
   }

@@ -92,9 +92,9 @@ public enum Parsley {
 
 private extension Parsley {
   enum AttributeTarget {
-    case codeFence(Int)    // absolute index among all code fences
+    case codeFence(Int) // absolute index among all code fences
     case heading(Int, Int) // (level, absolute index among headings of that level)
-    case block(Int)        // absolute index among all block-level elements
+    case block(Int) // absolute index among all block-level elements
   }
 
   struct AttributeStore {
@@ -297,14 +297,14 @@ private extension Parsley {
 
     for entry in store.entries {
       switch entry.target {
-      case .codeFence(let index):
-        result = applyNthAttribute(result, tag: "pre", n: index, attrs: entry.attrs)
+        case .codeFence(let index):
+          result = applyNthAttribute(result, tag: "pre", n: index, attrs: entry.attrs)
 
-      case .heading(let level, let index):
-        result = applyNthAttribute(result, tag: "h\(level)", n: index, attrs: entry.attrs)
+        case .heading(let level, let index):
+          result = applyNthAttribute(result, tag: "h\(level)", n: index, attrs: entry.attrs)
 
-      case .block(let index):
-        result = applyNthBlockAttribute(result, n: index, attrs: entry.attrs)
+        case .block(let index):
+          result = applyNthBlockAttribute(result, n: index, attrs: entry.attrs)
       }
     }
     return result
@@ -339,7 +339,8 @@ private extension Parsley {
         let searchStart = Range(match.range, in: html)!.lowerBound
         let searchRange = NSRange(searchStart..., in: html)
         if let imgMatch = imgRegex.firstMatch(in: html, range: searchRange),
-           imgMatch.range.location == match.range.location {
+           imgMatch.range.location == match.range.location
+        {
           let imgTag = (html as NSString).substring(with: imgMatch.range(at: 1))
           let newImg = imgTag.replacingOccurrences(of: " />", with: " \(attrs) />")
           let fullRange = Range(imgMatch.range, in: html)!
