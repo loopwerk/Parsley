@@ -28,7 +28,7 @@ print(document.metadata) // ["author": "Kevin", "tags": "Swift, Parsley"]
 Parsley is available via Swift Package Manager and runs on macOS and Linux.
 
 ```
-.package(url: "https://github.com/loopwerk/Parsley", from: "0.5.0"),
+.package(url: "https://github.com/loopwerk/Parsley", from: "1.0.0"),
 ```
 
 
