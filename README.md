@@ -80,15 +80,7 @@ def hello():
 ```
 ~~~
 
-This is equivalent to `{data-title="views.py"}` and generates:
-
-```html
-<pre data-title="views.py"><code class="language-python">def hello():
-    print("Hello, World!")
-</code></pre>
-```
-
-You can then use CSS to display the title, for example:
+This is equivalent to `{data-title="views.py"}`. You can then use CSS to display the title, for example:
 
 ```css
 pre[data-title]::before {
@@ -109,10 +101,6 @@ Attributes are placed at the end of the heading line:
 ## My heading {.special #intro}
 ```
 
-```html
-<h2 class="special" id="intro">My heading</h2>
-```
-
 ### Block elements
 
 For paragraphs, blockquotes, lists, horizontal rules, and tables, place the attributes on their own line directly after the element:
@@ -130,18 +118,6 @@ This is a paragraph.
 
 ---
 {.divider}
-```
-
-```html
-<p class="note">This is a paragraph.</p>
-<blockquote class="warning">
-<p>A blockquote.</p>
-</blockquote>
-<ul class="checklist">
-<li>First</li>
-<li>Second</li>
-</ul>
-<hr class="divider" />
 ```
 
 ### Standalone images
