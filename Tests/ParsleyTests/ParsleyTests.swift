@@ -217,6 +217,62 @@ final class ParsleyTests: XCTestCase {
     XCTAssertEqual(markdown.body, expectedOutput)
   }
 
+  func testFencedCodeBlocksWithNestedFences() throws {
+    // A four-backtick block can contain three-backtick fences. Those nested fences are
+    // content, not fence markers, so they must not shift the titles of the blocks after it.
+    let input = """
+    ````markdown title="CLAUDE.md"
+    Run this:
+
+    ```bash
+    echo one
+    ```
+    ````
+
+    ```bash title="run.sh"
+    echo two
+    ```
+
+    ```json title="settings.json"
+    {}
+    ```
+    """
+
+    let expectedOutput = """
+    <pre data-title="CLAUDE.md"><code class="language-markdown">Run this:
+
+    ```bash
+    echo one
+    ```
+    </code></pre>
+    <pre data-title="run.sh"><code class="language-bash">echo two
+    </code></pre>
+    <pre data-title="settings.json"><code class="language-json">{}
+    </code></pre>
+    """
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
+  func testTildeFencedCodeBlockWithAttributes() throws {
+    let input = """
+    ~~~python {data-title="views.py"}
+    def test():
+        pass
+    ~~~
+    """
+
+    let expectedOutput = """
+    <pre data-title="views.py"><code class="language-python">def test():
+        pass
+    </code></pre>
+    """
+
+    let markdown = try Parsley.parse(input)
+    XCTAssertEqual(markdown.body, expectedOutput)
+  }
+
   func testSmartQuotesOff() throws {
     let input = """
     "test"

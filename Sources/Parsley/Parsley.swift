@@ -98,6 +98,13 @@ private extension Parsley {
     var entries: [(target: AttributeTarget, attrs: String)] = []
   }
 
+  /// An opening or closing code fence marker: ``` or ~~~ (or longer).
+  struct CodeFence {
+    let character: Character
+    let length: Int
+    let info: String
+  }
+
   // Allowlist of HTML global attributes, matching goldmark's GlobalAttributeFilter.
   // class and id are handled separately via shorthand syntax.
   static let allowedAttributes: Set<String> = [
@@ -203,9 +210,32 @@ private extension Parsley {
     )
   }
 
+  /// Parses a code fence marker at the start of a line. Fences may be indented by up to
+  /// three spaces, and consist of at least three backticks or tildes.
+  static func codeFenceMarker(_ line: String) -> CodeFence? {
+    var index = line.startIndex
+    var indent = 0
+    while index < line.endIndex, line[index] == " ", indent < 3 {
+      indent += 1
+      index = line.index(after: index)
+    }
+
+    guard index < line.endIndex, line[index] == "`" || line[index] == "~" else { return nil }
+    let character = line[index]
+
+    var length = 0
+    while index < line.endIndex, line[index] == character {
+      length += 1
+      index = line.index(after: index)
+    }
+    guard length >= 3 else { return nil }
+
+    let info = line[index...].trimmingCharacters(in: .whitespaces)
+    return CodeFence(character: character, length: length, info: info)
+  }
+
   // Regex patterns used during preprocessing
-  static let codeFenceAttrPattern = try! NSRegularExpression(pattern: #"^```([^{\s]+)?\s*\{([^}]+)\}$"#)
-  static let codeFencePattern = try! NSRegularExpression(pattern: #"^```"#)
+  static let codeFenceAttrPattern = try! NSRegularExpression(pattern: #"^(\s{0,3})([`~]{3,})([^{\s]+)?\s*\{([^}]+)\}$"#)
   static let headingAttrPattern = try! NSRegularExpression(pattern: #"^(>?\s*)(#{1,6})\s+(.+?)\s+\{([^}]+)\}\s*$"#)
   static let headingPattern = try! NSRegularExpression(pattern: #"^>?\s*(#{1,6})\s+"#)
   static let rawHtmlHeadingPattern = try! NSRegularExpression(pattern: #"^>?\s*<h([1-6])[\s>]"#)
@@ -217,7 +247,7 @@ private extension Parsley {
   static func preprocessAttributes(_ markdown: String, includeBlockAttributes: Bool) -> (String, AttributeStore) {
     var store = AttributeStore()
     var lines = markdown.components(separatedBy: "\n")
-    var inCodeFence = false
+    var openFence: CodeFence?
     var codeFenceCount = 0
     var headingCounts: [Int: Int] = [:]
     var blockCount = 0
@@ -229,24 +259,33 @@ private extension Parsley {
       let range = NSRange(location: 0, length: nsLine.length)
 
       // Code fence opening/closing
-      if codeFencePattern.firstMatch(in: line, range: range) != nil {
-        if !inCodeFence {
-          if let match = codeFenceAttrPattern.firstMatch(in: line, range: range) {
-            let langRange = match.range(at: 1)
-            let lang = langRange.location != NSNotFound ? nsLine.substring(with: langRange) : ""
-            let attrsContent = nsLine.substring(with: match.range(at: 2))
-            store.entries.append((target: .codeFence(codeFenceCount), attrs: parseAttributes(attrsContent)))
-            lines[i] = "```\(lang)"
+      if let fence = codeFenceMarker(line) {
+        if let open = openFence {
+          // A fence only closes the block when it uses the same character, is at least
+          // as long as the opening fence, and has nothing but whitespace after it.
+          if fence.character == open.character, fence.length >= open.length, fence.info.isEmpty {
+            openFence = nil
           }
-          codeFenceCount += 1
-          blockCount += 1
-          inBlock = false
+          continue
         }
-        inCodeFence = !inCodeFence
+
+        if let match = codeFenceAttrPattern.firstMatch(in: line, range: range) {
+          let indent = nsLine.substring(with: match.range(at: 1))
+          let marker = nsLine.substring(with: match.range(at: 2))
+          let langRange = match.range(at: 3)
+          let lang = langRange.location != NSNotFound ? nsLine.substring(with: langRange) : ""
+          let attrsContent = nsLine.substring(with: match.range(at: 4))
+          store.entries.append((target: .codeFence(codeFenceCount), attrs: parseAttributes(attrsContent)))
+          lines[i] = "\(indent)\(marker)\(lang)"
+        }
+        codeFenceCount += 1
+        blockCount += 1
+        inBlock = false
+        openFence = fence
         continue
       }
 
-      if inCodeFence { continue }
+      if openFence != nil { continue }
 
       if includeBlockAttributes {
         // Heading with attributes: ## Title {.foo} (optionally inside > blockquote)
