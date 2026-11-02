@@ -386,7 +386,7 @@ private extension Parsley {
   /// Applies attributes to the Nth block-level element in HTML.
   /// For `<p>` tags containing only a standalone `<img>`, attributes are applied to the `<img>` instead.
   static func applyNthBlockAttribute(_ html: String, n: Int, attrs: String) -> String {
-    let blockPattern = #"<(p|blockquote|ul|ol|table|hr)([ >])"#
+    let blockPattern = #"<(p|blockquote|ul|ol|table|hr|h[1-6]|pre)([ >])"#
     guard let regex = try? NSRegularExpression(pattern: blockPattern) else { return html }
     let matches = regex.matches(in: html, range: NSRange(html.startIndex..., in: html))
     guard n >= 0, n < matches.count else { return html }

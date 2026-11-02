@@ -775,6 +775,24 @@ final class ParsleyTests: XCTestCase {
     XCTAssertEqual(result, "<p>First</p>\n<p class=\"middle\">Second</p>\n<p>Third</p>\n")
   }
 
+  func testBlockAttributeAfterHeading() throws {
+    let input = "## Heading\n\nFirst\n{.highlight}\n\nSecond"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2>Heading</h2>\n<p class=\"highlight\">First</p>\n<p>Second</p>\n")
+  }
+
+  func testImageAttributeAfterHeading() throws {
+    let input = "## Heading\n\nFirst\n\n![Alt text](image.png)\n{.hero}\n\nSecond"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<h2>Heading</h2>\n<p>First</p>\n<p><img src=\"image.png\" alt=\"Alt text\" class=\"hero\" /></p>\n<p>Second</p>\n")
+  }
+
+  func testBlockAttributeAfterCodeFence() throws {
+    let input = "```\ncode()\n```\n\nFirst\n{.highlight}\n\nSecond"
+    let result = try Parsley.html(input, options: [.markdownAttributes])
+    XCTAssertEqual(result, "<pre><code>code()\n</code></pre>\n<p class=\"highlight\">First</p>\n<p>Second</p>\n")
+  }
+
   func testCodeFenceAttributesDontLeakToNext() throws {
     let input = """
     ```python {.first}
